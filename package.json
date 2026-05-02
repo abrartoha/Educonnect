@@ -1,0 +1,16 @@
+{
+  "name": "education-marketplace",
+  "private": true,
+  "description": "Education marketplace monorepo — `client/` (React + Vite), `server/` (Express + Prisma), `mobile/` (Expo React Native).",
+  "scripts": {
+    "install:all": "npm --prefix client install && npm --prefix server install && npm --prefix mobile install",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "dev:mobile": "npm --prefix mobile start",
+    "dev:mobile:tunnel": "npm --prefix mobile run tunnel",
+    "build:client": "npm --prefix client run build",
+    "lint:client": "npm --prefix client run lint",
+    "seed": "npm --prefix server run seed",
+    "migrate": "npm --prefix server run prisma:migrate"
+  }
+}

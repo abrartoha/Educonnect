@@ -1,0 +1,147 @@
+/* Scoped overrides for LiveKit's <Chat /> so it fits the in-meeting side panel.
+   All rules sit under .lk-chat-host (the wrapper in MeetingRoom.jsx) so they
+   never leak to other LiveKit components. */
+
+.lk-chat-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.lk-chat-host *,
+.lk-chat-host *::before,
+.lk-chat-host *::after {
+  box-sizing: border-box;
+}
+
+/* Root chat container */
+.lk-chat-host .lk-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Hide LiveKit's own chat header — we render our own at the top of the panel */
+.lk-chat-host .lk-chat-header,
+.lk-chat-host > .lk-chat > h3,
+.lk-chat-host > .lk-chat > header {
+  display: none;
+}
+
+/* Message list — fill remaining space, scroll, sensible padding */
+.lk-chat-host .lk-chat-messages,
+.lk-chat-host ul.lk-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+}
+
+/* Individual message bubble */
+.lk-chat-host .lk-chat-entry {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgb(30 41 59); /* slate-800 */
+  color: rgb(248 250 252); /* slate-50 */
+  font-size: 13px;
+  line-height: 1.45;
+  word-break: break-word;
+  align-self: flex-start;
+  margin: 0;
+}
+
+/* Mine — pushed right, accent colour */
+.lk-chat-host .lk-chat-entry[data-lk-local-message='true'] {
+  align-self: flex-end;
+  background: rgb(124 58 237); /* violet-600 */
+  color: #fff;
+}
+
+/* Sender + timestamp meta line */
+.lk-chat-host .lk-meta-data,
+.lk-chat-host .lk-message-meta {
+  display: block;
+  font-size: 10px;
+  color: rgb(148 163 184); /* slate-400 */
+  margin-bottom: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.lk-chat-host .lk-chat-entry[data-lk-local-message='true'] .lk-meta-data,
+.lk-chat-host .lk-chat-entry[data-lk-local-message='true'] .lk-message-meta {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Body text */
+.lk-chat-host .lk-message-body {
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Composer */
+.lk-chat-host .lk-chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgb(30 41 59);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.lk-chat-host .lk-chat-form-input,
+.lk-chat-host input[type='text'].lk-chat-form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: rgb(15 23 42); /* slate-900 */
+  border: 1px solid rgb(51 65 85); /* slate-700 */
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: rgb(248 250 252);
+  font-size: 13px;
+  outline: none;
+  box-shadow: none;
+}
+
+.lk-chat-host .lk-chat-form-input::placeholder {
+  color: rgb(100 116 139);
+}
+
+.lk-chat-host .lk-chat-form-input:focus,
+.lk-chat-host .lk-chat-form-input:focus-visible {
+  border-color: rgb(124 58 237);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+}
+
+.lk-chat-host .lk-chat-form-button {
+  flex-shrink: 0;
+  background: rgb(124 58 237);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0 14px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.lk-chat-host .lk-chat-form-button:hover {
+  background: rgb(109 40 217);
+}
+
+.lk-chat-host .lk-chat-form-button:disabled {
+  background: rgb(51 65 85);
+  cursor: not-allowed;
+}

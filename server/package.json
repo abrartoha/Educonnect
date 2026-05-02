@@ -1,0 +1,45 @@
+{
+  "name": "education-marketplace-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Production backend for the Education Marketplace — Node/Express + PostgreSQL/Prisma.",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "seed": "node prisma/seed.js",
+    "lint": "eslint src prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "argon2": "^0.41.1",
+    "compression": "^1.7.5",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csrf-csrf": "^3.0.6",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.15.2",
+    "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
+    "pino": "^9.6.0",
+    "pino-http": "^10.3.0",
+    "pino-pretty": "^13.0.0",
+    "socket.io": "^4.8.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

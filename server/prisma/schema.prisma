@@ -1,0 +1,505 @@
+// ===========================================================================
+//  Education Marketplace — Prisma schema
+//  Single `User` table with role discrimination + 1:1 profile tables per role.
+//  This gives us clean auth, clean RBAC, and strong referential integrity.
+// ===========================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+//  Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  UNIVERSITY
+  AGENT
+  CONSULTANT
+  STUDENT
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum Tier {
+  FREE
+  PREMIUM
+  ENTERPRISE
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+enum PostCategory {
+  SCHOLARSHIPS
+  VISA_TIPS
+  COURSES
+  CAMPUS_LIFE
+  CAREER
+  STUDENT_LIFE
+  EVENTS
+}
+
+enum MediaType {
+  NONE
+  IMAGE
+  VIDEO
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+// ---------------------------------------------------------------------------
+//  Core identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  role          Role
+  status        AccountStatus  @default(PENDING)
+  name          String
+  avatarUrl     String?
+  emailVerified Boolean        @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // 1:1 role profiles (only one will be set)
+  university  UniversityProfile?
+  agent       AgentProfile?
+  consultant  ConsultantProfile?
+  student     StudentProfile?
+
+  // Activity
+  refreshTokens      RefreshToken[]
+  posts              Post[]
+  comments           Comment[]
+  postVotes          PostVote[]
+  bookmarks          Bookmark[]
+  reviewsWritten     Review[]        @relation("ReviewerReviews")
+  reviewsReceived    Review[]        @relation("TargetReviews")
+  bookingsAsStudent  Booking[]       @relation("StudentBookings")
+  bookingsAsProvider Booking[]       @relation("ProviderBookings")
+  leadsAsStudent     Lead[]          @relation("StudentLeads")
+  leadsAsUni         Lead[]          @relation("UniLeads")
+  campaigns          Campaign[]
+  auditLogs          AuditLog[]
+  conversationsAsA   Conversation[]  @relation("ConversationsAsA")
+  conversationsAsB   Conversation[]  @relation("ConversationsAsB")
+  messagesSent       Message[]
+  conversationReads  ConversationRead[]
+
+  @@index([role, status])
+}
+
+// ---------------------------------------------------------------------------
+//  Role profiles
+// ---------------------------------------------------------------------------
+
+model UniversityProfile {
+  userId           String   @id
+  shortName        String?
+  location         String?
+  type             String?  // "Public", "Private", "Group of Eight", etc.
+  description      String?
+  website          String?
+  phone            String?
+  logoUrl          String?
+  coverImageUrl    String?
+  foundedYear      Int?
+  studentCount     Int?
+  internationalPct Int?
+  ranking          Int?
+  rating           Float    @default(0)
+  reviewCount      Int      @default(0)
+  views            Int      @default(0)
+  inquiries        Int      @default(0)
+  tier             Tier     @default(FREE)
+  verified         Boolean  @default(false)
+  tuitionMin       Int?     // per-year tuition for international students (lower bound)
+  tuitionMax       Int?     // per-year tuition for international students (upper bound)
+  tuitionCurrency  String   @default("AUD")
+  courses          String[] @default([])
+  scholarships     String[] @default([])
+  intakes          String[] @default([])
+  facilities       String[] @default([])
+  accreditations   String[] @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model AgentProfile {
+  userId              String   @id
+  contactPerson       String?
+  phone               String?
+  location            String?
+  description         String?
+  website             String?
+  logoUrl             String?
+  yearsExperience     Int?
+  studentsPlaced      Int      @default(0)
+  partnerInstitutions Int      @default(0)
+  successRate         Float    @default(0)
+  rating              Float    @default(0)
+  reviewCount         Int      @default(0)
+  verified            Boolean  @default(false)
+  tier                Tier     @default(FREE)
+  certifications      String[] @default([])
+  services            String[] @default([])
+  languages           String[] @default([])
+  specialisations     String[] @default([])
+  maraNumber          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model ConsultantProfile {
+  userId           String   @id
+  phone            String?
+  location         String?
+  description      String?
+  website          String?
+  yearsExperience  Int?
+  studentsAssisted Int      @default(0)
+  successRate      Float    @default(0)
+  rating           Float    @default(0)
+  reviewCount      Int      @default(0)
+  verified         Boolean  @default(false)
+  tier             Tier     @default(FREE)
+  qualifications   String[] @default([])
+  services         String[] @default([])
+  languages        String[] @default([])
+  specialisations  String[] @default([])
+  hourlyRate       Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model StudentProfile {
+  userId             String   @id
+  phone              String?
+  nationality        String?
+  currentEducation   String?
+  interestedIn       String[] @default([])
+  preferredLocations String[] @default([])
+  budgetMin          Int?
+  budgetMax          Int?
+  bio                String?
+  intakeTarget       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+//  Auth — refresh tokens (rotation + revoke)
+// ---------------------------------------------------------------------------
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  userAgent  String?
+  ip         String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+//  Posts / feed
+// ---------------------------------------------------------------------------
+
+model Post {
+  id         String       @id @default(cuid())
+  authorId   String
+  title      String
+  content    String
+  category   PostCategory
+  mediaType  MediaType    @default(NONE)
+  mediaUrl   String?
+  tags       String[]     @default([])
+  status     PostStatus   @default(PUBLISHED)
+  isPinned   Boolean      @default(false)
+  upvoteCount Int         @default(0)
+  commentCount Int        @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  votes     PostVote[]
+  bookmarks Bookmark[]
+
+  @@index([status, createdAt])
+  @@index([category, status])
+  @@index([authorId])
+  @@index([isPinned, createdAt])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  postId      String
+  authorId    String
+  text        String
+  upvoteCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+}
+
+model PostVote {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+
+model Bookmark {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+//  Reviews (student → uni/agent/consultant)
+// ---------------------------------------------------------------------------
+
+model Review {
+  id         String   @id @default(cuid())
+  reviewerId String
+  targetId   String
+  targetRole Role     // UNIVERSITY / AGENT / CONSULTANT
+  rating     Int
+  title      String?
+  body       String
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  reviewer User @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  target   User @relation("TargetReviews",   fields: [targetId],   references: [id], onDelete: Cascade)
+
+  @@unique([reviewerId, targetId])
+  @@index([targetId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+//  Bookings (student ↔ agent/consultant)
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id         String        @id @default(cuid())
+  studentId  String
+  providerId String
+  subject    String
+  notes      String?
+  scheduledAt DateTime
+  durationMinutes Int       @default(30)
+  mode       String        @default("video") // "video" | "phone" | "in-person"
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  student  User     @relation("StudentBookings",  fields: [studentId],  references: [id], onDelete: Cascade)
+  provider User     @relation("ProviderBookings", fields: [providerId], references: [id], onDelete: Cascade)
+  meeting  Meeting?
+
+  @@index([providerId, status])
+  @@index([studentId, status])
+  @@index([scheduledAt])
+}
+
+// ---------------------------------------------------------------------------
+//  Meetings (LiveKit room metadata, 1:1 with Booking)
+// ---------------------------------------------------------------------------
+
+model Meeting {
+  id              String    @id @default(cuid())
+  bookingId       String    @unique
+  // Random UUID, NOT bookingId — prevents room enumeration.
+  roomName        String    @unique
+  maxParticipants Int       @default(2)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([roomName])
+}
+
+// ---------------------------------------------------------------------------
+//  Leads (student → university enquiry)
+// ---------------------------------------------------------------------------
+
+model Lead {
+  id           String     @id @default(cuid())
+  studentId    String
+  universityId String
+  programme    String?
+  message      String
+  status       LeadStatus @default(NEW)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  student    User @relation("StudentLeads", fields: [studentId],    references: [id], onDelete: Cascade)
+  university User @relation("UniLeads",     fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, status])
+  @@index([studentId])
+}
+
+// ---------------------------------------------------------------------------
+//  Campaigns (uni-scoped)
+// ---------------------------------------------------------------------------
+
+model Campaign {
+  id           String         @id @default(cuid())
+  universityId String
+  name         String
+  audience     String
+  startDate    DateTime
+  endDate      DateTime
+  status       CampaignStatus @default(DRAFT)
+  impressions  Int            @default(0)
+  clicks       Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  university User @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([universityId, status])
+  @@index([startDate, endDate])
+}
+
+// ---------------------------------------------------------------------------
+//  Messaging — 1:1 conversations between any two users
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id            String    @id @default(cuid())
+  // userAId and userBId are stored in sorted order (userAId < userBId) so
+  // there is exactly one row per pair. Service layer enforces this.
+  userAId       String
+  userBId       String
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userA    User               @relation("ConversationsAsA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB    User               @relation("ConversationsAsB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages Message[]
+  reads    ConversationRead[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId, lastMessageAt])
+  @@index([userBId, lastMessageAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// Per-user read cursor inside a conversation. Drives unread counts.
+model ConversationRead {
+  conversationId String
+  userId         String
+  lastReadAt     DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+//  Audit log — who did what (useful for moderation + security review)
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  meta       Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}

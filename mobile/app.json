@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "EduConnect",
+    "slug": "education-marketplace",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "educonnect",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.educonnect.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "EduConnect uses your camera during scheduled meetings.",
+        "NSMicrophoneUsageDescription": "EduConnect uses your microphone during scheduled meetings.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.educonnect.mobile",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.INTERNET",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.INTERNET",
+        "android.permission.FOREGROUND_SERVICE"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:5050",
+      "eas": {
+        "projectId": "ace2d1e5-767b-4595-92e3-f1a5608189dd"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "@livekit/react-native-expo-plugin"
+    ],
+    "owner": "abrartoha",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ace2d1e5-767b-4595-92e3-f1a5608189dd"
+    }
+  }
+}
