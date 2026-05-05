@@ -59,13 +59,6 @@ enum MediaType {
   VIDEO
 }
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
 enum LeadStatus {
   NEW
   CONTACTED
@@ -111,16 +104,10 @@ model User {
   bookmarks          Bookmark[]
   reviewsWritten     Review[]        @relation("ReviewerReviews")
   reviewsReceived    Review[]        @relation("TargetReviews")
-  bookingsAsStudent  Booking[]       @relation("StudentBookings")
-  bookingsAsProvider Booking[]       @relation("ProviderBookings")
   leadsAsStudent     Lead[]          @relation("StudentLeads")
-  leadsAsUni         Lead[]          @relation("UniLeads")
+  leadsAsTarget      Lead[]          @relation("TargetLeads")
   campaigns          Campaign[]
   auditLogs          AuditLog[]
-  conversationsAsA   Conversation[]  @relation("ConversationsAsA")
-  conversationsAsB   Conversation[]  @relation("ConversationsAsB")
-  messagesSent       Message[]
-  conversationReads  ConversationRead[]
 
   @@index([role, status])
 }
@@ -343,69 +330,24 @@ model Review {
 }
 
 // ---------------------------------------------------------------------------
-//  Bookings (student ↔ agent/consultant)
-// ---------------------------------------------------------------------------
-
-model Booking {
-  id         String        @id @default(cuid())
-  studentId  String
-  providerId String
-  subject    String
-  notes      String?
-  scheduledAt DateTime
-  durationMinutes Int       @default(30)
-  mode       String        @default("video") // "video" | "phone" | "in-person"
-  status     BookingStatus @default(PENDING)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-
-  student  User     @relation("StudentBookings",  fields: [studentId],  references: [id], onDelete: Cascade)
-  provider User     @relation("ProviderBookings", fields: [providerId], references: [id], onDelete: Cascade)
-  meeting  Meeting?
-
-  @@index([providerId, status])
-  @@index([studentId, status])
-  @@index([scheduledAt])
-}
-
-// ---------------------------------------------------------------------------
-//  Meetings (LiveKit room metadata, 1:1 with Booking)
-// ---------------------------------------------------------------------------
-
-model Meeting {
-  id              String    @id @default(cuid())
-  bookingId       String    @unique
-  // Random UUID, NOT bookingId — prevents room enumeration.
-  roomName        String    @unique
-  maxParticipants Int       @default(2)
-  startedAt       DateTime?
-  endedAt         DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  @@index([roomName])
-}
-
-// ---------------------------------------------------------------------------
-//  Leads (student → university enquiry)
+//  Leads / enquiries (student → university / agent / consultant)
 // ---------------------------------------------------------------------------
 
 model Lead {
-  id           String     @id @default(cuid())
-  studentId    String
-  universityId String
-  programme    String?
-  message      String
-  status       LeadStatus @default(NEW)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  studentId  String
+  targetId   String
+  targetRole Role       // UNIVERSITY / AGENT / CONSULTANT
+  programme  String?
+  message    String
+  status     LeadStatus @default(NEW)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  student    User @relation("StudentLeads", fields: [studentId],    references: [id], onDelete: Cascade)
-  university User @relation("UniLeads",     fields: [universityId], references: [id], onDelete: Cascade)
+  student User @relation("StudentLeads", fields: [studentId], references: [id], onDelete: Cascade)
+  target  User @relation("TargetLeads",  fields: [targetId],  references: [id], onDelete: Cascade)
 
-  @@index([universityId, status])
+  @@index([targetId, status])
   @@index([studentId])
 }
 
@@ -430,57 +372,6 @@ model Campaign {
 
   @@index([universityId, status])
   @@index([startDate, endDate])
-}
-
-// ---------------------------------------------------------------------------
-//  Messaging — 1:1 conversations between any two users
-// ---------------------------------------------------------------------------
-
-model Conversation {
-  id            String    @id @default(cuid())
-  // userAId and userBId are stored in sorted order (userAId < userBId) so
-  // there is exactly one row per pair. Service layer enforces this.
-  userAId       String
-  userBId       String
-  lastMessageAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  userA    User               @relation("ConversationsAsA", fields: [userAId], references: [id], onDelete: Cascade)
-  userB    User               @relation("ConversationsAsB", fields: [userBId], references: [id], onDelete: Cascade)
-  messages Message[]
-  reads    ConversationRead[]
-
-  @@unique([userAId, userBId])
-  @@index([userAId, lastMessageAt])
-  @@index([userBId, lastMessageAt])
-}
-
-model Message {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderId       String
-  body           String
-  createdAt      DateTime @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId, createdAt])
-  @@index([senderId])
-}
-
-// Per-user read cursor inside a conversation. Drives unread counts.
-model ConversationRead {
-  conversationId String
-  userId         String
-  lastReadAt     DateTime @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([conversationId, userId])
-  @@index([userId])
 }
 
 // ---------------------------------------------------------------------------

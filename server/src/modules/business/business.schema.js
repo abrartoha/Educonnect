@@ -30,32 +30,10 @@ export const updateCampaignSchema = z.object({
   status: campaignStatusEnum.optional(),
 });
 
-// --- Bookings ---------------------------------------------------------------
-
-export const bookingStatusEnum = z.enum([
-  'PENDING',
-  'CONFIRMED',
-  'COMPLETED',
-  'CANCELLED',
-]);
-
-export const createBookingSchema = z.object({
-  providerId: z.string().min(1).max(40),
-  subject: z.string().min(3).max(200),
-  notes: z.string().max(2000).optional(),
-  scheduledAt: dateFromString,
-  durationMinutes: z.coerce.number().int().min(10).max(240).default(30),
-  mode: z.enum(['video', 'phone', 'in-person']).default('video'),
-});
-
-export const updateBookingStatusSchema = z.object({
-  status: bookingStatusEnum,
-});
-
-// --- Leads ------------------------------------------------------------------
+// --- Leads (student → any provider) -----------------------------------------
 
 export const createLeadSchema = z.object({
-  universityId: z.string().min(1).max(40),
+  targetId: z.string().min(1).max(40),
   programme: z.string().max(200).optional(),
   message: z.string().min(10).max(2000),
 });

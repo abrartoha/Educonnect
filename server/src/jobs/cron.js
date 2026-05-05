@@ -44,35 +44,13 @@ const endExpiredCampaigns = cron.schedule(
   { scheduled: false, timezone: 'Australia/Melbourne' }
 );
 
-// 3) Mark bookings in the past as COMPLETED if they were CONFIRMED — every hour.
-const completePastBookings = cron.schedule(
-  '30 * * * *',
-  async () => {
-    try {
-      const { count } = await prisma.booking.updateMany({
-        where: {
-          status: 'CONFIRMED',
-          scheduledAt: { lt: new Date(Date.now() - 60 * 60 * 1000) },
-        },
-        data: { status: 'COMPLETED' },
-      });
-      if (count > 0) logger.info({ count }, 'Auto-completed past bookings');
-    } catch (err) {
-      logger.error({ err }, 'Booking completion job failed');
-    }
-  },
-  { scheduled: false, timezone: 'Australia/Melbourne' }
-);
-
 export const startCronJobs = () => {
   cleanupRefreshTokens.start();
   endExpiredCampaigns.start();
-  completePastBookings.start();
   logger.info('Cron jobs started');
 };
 
 export const stopCronJobs = () => {
   cleanupRefreshTokens.stop();
   endExpiredCampaigns.stop();
-  completePastBookings.stop();
 };

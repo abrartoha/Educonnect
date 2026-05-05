@@ -26,8 +26,6 @@ import { useApiResource } from '../../hooks/useApiResource';
 import { normaliseDirectoryItem } from '../../api/mappers';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import BookingModal from '../../components/booking/BookingModal';
-import MessageUserButton from '../../components/messaging/MessageUserButton';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -81,7 +79,6 @@ export default function UniversityDetail() {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
-  const [showBookingModal, setShowBookingModal] = useState(false);
   const [enquiryForm, setEnquiryForm] = useState({
     name: '',
     email: '',
@@ -644,7 +641,7 @@ export default function UniversityDetail() {
               </div>
 
               {/* Enquire / Book Meeting */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <button
                   onClick={() => setShowEnquiryModal(true)}
                   className="flex w-full items-center justify-center gap-2 gradient-primary rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/25 transition-all hover:shadow-lg hover:brightness-110"
@@ -652,17 +649,6 @@ export default function UniversityDetail() {
                   <Send size={16} />
                   Enquire Now
                 </button>
-                <button
-                  onClick={() => setShowBookingModal(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                >
-                  <Calendar size={16} />
-                  Book a meeting
-                </button>
-                <MessageUserButton
-                  targetUser={university ? { id: university.id, name: university.name } : null}
-                  className="w-full"
-                />
               </div>
 
               {/* Tuition quick view */}
@@ -865,12 +851,6 @@ export default function UniversityDetail() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <BookingModal
-        open={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-        provider={university ? { id: university.id, name: university.name } : null}
-      />
 
       <Footer />
     </div>

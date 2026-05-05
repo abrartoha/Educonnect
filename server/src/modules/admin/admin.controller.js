@@ -136,7 +136,6 @@ export const overview = async (_req, res) => {
     students,
     posts,
     pendingApprovals,
-    bookings,
     leads,
   ] = await Promise.all([
     prisma.user.count({ where: { role: 'UNIVERSITY' } }),
@@ -150,7 +149,6 @@ export const overview = async (_req, res) => {
         role: { in: ['UNIVERSITY', 'AGENT', 'CONSULTANT'] },
       },
     }),
-    prisma.booking.count(),
     prisma.lead.count(),
   ]);
   res.json({
@@ -161,7 +159,6 @@ export const overview = async (_req, res) => {
       students,
       posts,
       pendingApprovals,
-      bookings,
       leads,
     },
   });

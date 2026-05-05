@@ -15,7 +15,7 @@ import IconSquare from '../../components/IconSquare';
 import Badge from '../../components/Badge';
 import Button from '../../components/Button';
 import { colors, gradients, radius, shadow, spacing, typography } from '../../theme';
-import { directoryApi, leadsApi, messagingApi } from '../../api/endpoints';
+import { directoryApi, leadsApi } from '../../api/endpoints';
 import { useApiResource } from '../../hooks/useApiResource';
 import { normaliseDirectoryItem } from '../../api/mappers';
 import { useAuth } from '../../auth/AuthContext';
@@ -62,41 +62,26 @@ export default function DirectoryDetailScreen({ route, navigation }) {
 
   const handleSendEnquiry = async () => {
     if (user?.role !== 'student') {
-      return Alert.alert('Sign in as student', 'Only students can enquire.');
+      return Alert.alert('Sign in as student', 'Only students can send enquiries.');
     }
-    try {
-      await leadsApi.create({
-        universityId: item.id,
-        message: `I'm interested in programs at ${item.name}.`,
-      });
-      Alert.alert('Sent', 'Your enquiry has been sent.');
-    } catch (err) {
-      Alert.alert('Error', err?.message || 'Could not send.');
-    }
-  };
-
-  const handleBook = () => {
-    if (isSelf) return Alert.alert('Cannot book yourself');
-    navigation.navigate('CreateBooking', {
-      providerId: item.id,
-      providerName: item.name,
-    });
-  };
-
-  const handleMessage = async () => {
-    if (isSelf) return Alert.alert('Cannot message yourself');
-    try {
-      const res = await messagingApi.startConversation(item.id);
-      const conversationId = res?.item?.id;
-      if (conversationId) {
-        navigation.navigate('Conversation', {
-          conversationId,
-          otherUserName: item.name,
-        });
-      }
-    } catch (err) {
-      Alert.alert('Error', err?.message || 'Could not start conversation.');
-    }
+    if (isSelf) return Alert.alert('Cannot enquire to yourself');
+    Alert.prompt(
+      'Send enquiry',
+      `Tell ${item.name} what you're looking for (10–2000 chars).`,
+      async (message) => {
+        const trimmed = (message || '').trim();
+        if (trimmed.length < 10) {
+          return Alert.alert('Message too short', 'Please add a bit more detail.');
+        }
+        try {
+          await leadsApi.create({ targetId: item.id, message: trimmed });
+          Alert.alert('Sent', `Your enquiry was emailed to ${item.name}.`);
+        } catch (err) {
+          Alert.alert('Error', err?.message || 'Could not send enquiry.');
+        }
+      },
+      'plain-text'
+    );
   };
 
   return (
@@ -266,32 +251,13 @@ export default function DirectoryDetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* Action stack — universities get Enquire too; bookings + message
-            apply to all three provider types. */}
-        {type === 'university' ? (
+        {/* Single "Send enquiry" CTA — emailed to the target. */}
+        {!isSelf ? (
           <Button
             title="Send enquiry"
             onPress={handleSendEnquiry}
             icon="Send"
-            variant="soft"
             style={{ marginTop: spacing.xl }}
-          />
-        ) : null}
-        {!isSelf ? (
-          <Button
-            title="Book a meeting"
-            onPress={handleBook}
-            icon="Calendar"
-            style={{ marginTop: type === 'university' ? spacing.md : spacing.xl }}
-          />
-        ) : null}
-        {!isSelf ? (
-          <Button
-            title="Message"
-            onPress={handleMessage}
-            icon="MessageSquare"
-            variant="secondary"
-            style={{ marginTop: spacing.md }}
           />
         ) : null}
 

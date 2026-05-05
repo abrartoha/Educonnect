@@ -7,8 +7,6 @@ import { idParam } from '../../shared/validators/common.schema.js';
 import {
   createCampaignSchema,
   updateCampaignSchema,
-  createBookingSchema,
-  updateBookingStatusSchema,
   createLeadSchema,
   updateLeadStatusSchema,
   createReviewBodySchema,
@@ -19,11 +17,6 @@ import {
   updateCampaign,
   deleteCampaign,
 } from './campaigns.controller.js';
-import {
-  createBooking,
-  listMyBookings,
-  updateBookingStatus,
-} from './bookings.controller.js';
 import {
   createLead,
   listMyLeads,
@@ -64,26 +57,14 @@ router.delete(
   asyncHandler(deleteCampaign)
 );
 
-// ---- Bookings (any non-admin role can book; provider must be agent/uni/consultant)
-router.get('/bookings', requireAuth, asyncHandler(listMyBookings));
-router.post(
-  '/bookings',
+// ---- Leads (student → uni / agent / consultant) ---------------------------
+// `/leads` returns leads received by the caller (uni/agent/consultant).
+router.get(
+  '/leads',
   requireAuth,
-  requireRole('STUDENT', 'AGENT', 'CONSULTANT', 'UNIVERSITY'),
-  csrfProtection,
-  validate({ body: createBookingSchema }),
-  asyncHandler(createBooking)
+  requireRole('UNIVERSITY', 'AGENT', 'CONSULTANT'),
+  asyncHandler(listMyLeads)
 );
-router.patch(
-  '/bookings/:id/status',
-  requireAuth,
-  csrfProtection,
-  validate({ params: idParam, body: updateBookingStatusSchema }),
-  asyncHandler(updateBookingStatus)
-);
-
-// ---- Leads (student → university) -----------------------------------------
-router.get('/leads', requireAuth, requireRole('UNIVERSITY'), asyncHandler(listMyLeads));
 router.get(
   '/leads/mine',
   requireAuth,
@@ -101,7 +82,7 @@ router.post(
 router.patch(
   '/leads/:id/status',
   requireAuth,
-  requireRole('UNIVERSITY'),
+  requireRole('UNIVERSITY', 'AGENT', 'CONSULTANT'),
   csrfProtection,
   validate({ params: idParam, body: updateLeadStatusSchema }),
   asyncHandler(updateLeadStatus)

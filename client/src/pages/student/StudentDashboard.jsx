@@ -18,10 +18,9 @@ import {
   Heart,
 } from 'lucide-react';
 import useStore from '../../store/useStore';
-import { directoryApi, postsApi, bookingsApi } from '../../api/endpoints';
+import { directoryApi, postsApi, leadsApi } from '../../api/endpoints';
 import { useApiResource } from '../../hooks/useApiResource';
-import { normaliseDirectoryItem, normalisePost, normaliseBooking } from '../../api/mappers';
-import JoinMeetingButton from '../../components/meeting/JoinMeetingButton';
+import { normaliseDirectoryItem, normalisePost, normaliseLead } from '../../api/mappers';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -52,14 +51,14 @@ export default function StudentDashboard() {
     []
   );
   const { data: bookmarksData } = useApiResource(() => postsApi.bookmarks(), []);
-  const { data: bookingsData } = useApiResource(() => bookingsApi.list(), []);
+  const { data: enquiriesData } = useApiResource(() => leadsApi.listMine(), []);
 
   const universities = (uniData?.items || []).map(normaliseDirectoryItem);
   const agents = (agentData?.items || []).map(normaliseDirectoryItem);
   const consultants = (consultantData?.items || []).map(normaliseDirectoryItem);
   const posts = (postsData?.items || []).map(normalisePost);
   const bookmarkedPosts = (bookmarksData?.items || []).map(normalisePost);
-  const bookings = (bookingsData?.items || []).map(normaliseBooking);
+  const enquiries = (enquiriesData?.items || []).map(normaliseLead);
 
   // Derive member-since year
   const memberSince = currentUser?.createdAt
@@ -68,10 +67,6 @@ export default function StudentDashboard() {
 
   // Bookmarked posts count comes straight from the API.
   const bookmarkedPostsCount = bookmarkedPosts.length;
-
-  // Student bookings — the API already scopes to the caller, so `bookings` IS
-  // the student's list when they're logged in as a student.
-  const studentBookings = bookings;
 
   // Recommended universities
   const recommendedUniversities = useMemo(() => {
@@ -176,12 +171,12 @@ export default function StudentDashboard() {
     },
   ];
 
-  // Booking status styling
-  const bookingStatusConfig = {
-    pending: 'bg-amber-100 text-amber-700',
-    confirmed: 'bg-green-100 text-green-700',
-    completed: 'bg-blue-100 text-blue-700',
-    cancelled: 'bg-red-100 text-red-700',
+  // Enquiry status styling
+  const leadStatusConfig = {
+    new: 'bg-amber-100 text-amber-700',
+    contacted: 'bg-blue-100 text-blue-700',
+    converted: 'bg-green-100 text-green-700',
+    closed: 'bg-slate-100 text-slate-600',
   };
 
   // Category badge colours
@@ -238,8 +233,8 @@ export default function StudentDashboard() {
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-center">
-              <p className="text-2xl font-bold">{studentBookings.length}</p>
-              <p className="text-xs text-violet-200">Bookings</p>
+              <p className="text-2xl font-bold">{enquiries.length}</p>
+              <p className="text-xs text-violet-200">Enquiries</p>
             </div>
             <div className="w-px h-8 bg-white/20" />
             <div className="text-center">
@@ -398,9 +393,9 @@ export default function StudentDashboard() {
         </div>
       </motion.div>
 
-      {/* ─── Your Bookings + Budget Overview ─── */}
+      {/* ─── Your Enquiries + Budget Overview ─── */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bookings */}
+        {/* Enquiries */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -411,62 +406,48 @@ export default function StudentDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-violet-600" />
-              Your Bookings
+              Your Enquiries
             </h2>
           </div>
 
-          {studentBookings.length > 0 ? (
+          {enquiries.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
-                    <th className="pb-2 font-medium">With</th>
-                    <th className="pb-2 font-medium">Date</th>
+                    <th className="pb-2 font-medium">To</th>
+                    <th className="pb-2 font-medium">Sent</th>
                     <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {studentBookings.map((booking) => (
-                    <tr key={booking.id}>
+                  {enquiries.slice(0, 5).map((lead) => (
+                    <tr key={lead.id}>
                       <td className="py-2.5 text-slate-900 font-medium">
-                        {booking.provider?.name || 'N/A'}
+                        {lead.target?.name || 'N/A'}
+                        {lead.targetRole ? (
+                          <span className="ml-1 text-xs text-slate-400 capitalize">
+                            · {lead.targetRole}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-2.5 text-slate-500">
-                        {booking.scheduledAt ? (
-                          <>
-                            {new Date(booking.scheduledAt).toLocaleDateString('en-AU', {
+                        {lead.createdAt
+                          ? new Date(lead.createdAt).toLocaleDateString('en-AU', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
-                            })}
-                            <span className="ml-1 text-slate-700">
-                              {new Date(booking.scheduledAt).toLocaleTimeString('en-AU', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                            {booking.durationMinutes ? (
-                              <span className="ml-1 text-xs text-slate-400">
-                                · {booking.durationMinutes} min
-                              </span>
-                            ) : null}
-                          </>
-                        ) : (
-                          'N/A'
-                        )}
+                            })
+                          : 'N/A'}
                       </td>
                       <td className="py-2.5">
                         <span
-                          className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                            bookingStatusConfig[booking.status] || 'bg-slate-100 text-slate-600'
+                          className={`text-xs font-medium px-2.5 py-0.5 rounded-full capitalize ${
+                            leadStatusConfig[lead.status] || 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {booking.status || 'pending'}
+                          {lead.status || 'new'}
                         </span>
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <JoinMeetingButton booking={booking} />
                       </td>
                     </tr>
                   ))}
@@ -476,12 +457,12 @@ export default function StudentDashboard() {
           ) : (
             <div className="text-center py-8">
               <Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-500 mb-3">No bookings yet</p>
+              <p className="text-sm text-slate-500 mb-3">No enquiries yet</p>
               <Link
-                to="/agents"
+                to="/universities"
                 className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
-                Browse Agents <ArrowRight className="w-4 h-4" />
+                Browse Universities <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           )}

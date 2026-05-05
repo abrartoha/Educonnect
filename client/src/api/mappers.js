@@ -36,14 +36,7 @@ export const CATEGORY_TO_API = Object.fromEntries(
 export const MEDIA_FROM_API = { NONE: 'none', IMAGE: 'image', VIDEO: 'video' };
 export const MEDIA_TO_API = { none: 'NONE', image: 'IMAGE', video: 'VIDEO' };
 
-// ---- Booking / lead / campaign statuses -----------------------------------
-export const BOOKING_STATUS_FROM_API = {
-  PENDING: 'pending',
-  CONFIRMED: 'confirmed',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled',
-};
-
+// ---- Lead / campaign statuses ---------------------------------------------
 export const LEAD_STATUS_FROM_API = {
   NEW: 'new',
   CONTACTED: 'contacted',
@@ -147,22 +140,6 @@ export function normaliseDirectoryItem(u) {
   };
 }
 
-// Normalise a booking response.
-export function normaliseBooking(b) {
-  return {
-    id: b.id,
-    subject: b.subject,
-    notes: b.notes,
-    scheduledAt: b.scheduledAt,
-    durationMinutes: b.durationMinutes,
-    mode: b.mode,
-    status: BOOKING_STATUS_FROM_API[b.status] || 'pending',
-    student: b.student,
-    provider: b.provider,
-    createdAt: b.createdAt,
-  };
-}
-
 export function normaliseLead(l) {
   return {
     id: l.id,
@@ -170,7 +147,8 @@ export function normaliseLead(l) {
     message: l.message,
     status: LEAD_STATUS_FROM_API[l.status] || 'new',
     student: l.student,
-    university: l.university,
+    target: l.target,
+    targetRole: l.targetRole ? String(l.targetRole).toLowerCase() : null,
     createdAt: l.createdAt,
   };
 }

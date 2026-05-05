@@ -27,10 +27,14 @@ const envSchema = z.object({
 
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
-  // LiveKit (in-app video meetings)
-  LIVEKIT_URL: z.string().startsWith('wss://'),
-  LIVEKIT_API_KEY: z.string().min(8),
-  LIVEKIT_API_SECRET: z.string().min(16),
+  // Email (enquiry notifications). All optional in dev — when blank we
+  // fall back to a free Ethereal test inbox so devs can still see the
+  // emails without SMTP credentials.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().default('EduConnect <noreply@educonnect.com.au>'),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -26,36 +26,23 @@ const UniDashboard = lazy(() => import('./pages/university/UniDashboard'))
 const UniProfile = lazy(() => import('./pages/university/UniProfile'))
 const UniAnalytics = lazy(() => import('./pages/university/UniAnalytics'))
 const UniCampaigns = lazy(() => import('./pages/university/UniCampaigns'))
-const UniBookings = lazy(() => import('./pages/university/UniBookings'))
 
 // Agent
 const AgentDashboard = lazy(() => import('./pages/agent/AgentDashboard'))
 const AgentProfile = lazy(() => import('./pages/agent/AgentProfile'))
-const AgentBookings = lazy(() => import('./pages/agent/AgentBookings'))
 const AgentAnalytics = lazy(() => import('./pages/agent/AgentAnalytics'))
 
 // Consultant
 const ConsultantDashboard = lazy(() => import('./pages/consultant/ConsultantDashboard'))
 const ConsultantProfile = lazy(() => import('./pages/consultant/ConsultantProfile'))
-const ConsultantBookings = lazy(() => import('./pages/consultant/ConsultantBookings'))
 const ConsultantAnalytics = lazy(() => import('./pages/consultant/ConsultantAnalytics'))
 
 // Student
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'))
 const StudentProfile = lazy(() => import('./pages/student/StudentProfile'))
-const StudentBookings = lazy(() => import('./pages/student/StudentBookings'))
 
 // Shared dashboard
 const MyPosts = lazy(() => import('./pages/dashboard/MyPosts'))
-
-// Meeting (LiveKit)
-const MeetingRoom = lazy(() => import('./pages/meeting/MeetingRoom'))
-
-// Messaging
-const MessagesPage = lazy(() => import('./pages/messages/MessagesPage'))
-
-// Cross-page realtime notifications (mounted at app root)
-const GlobalNotifications = lazy(() => import('./components/notifications/GlobalNotifications'))
 
 // Marketplace
 const Universities = lazy(() => import('./pages/marketplace/Universities'))
@@ -147,7 +134,6 @@ export default function App() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <ScrollToTop />
-      <GlobalNotifications />
       <Routes>
         {/* Auth routes (only for unauthenticated users) */}
         <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
@@ -190,7 +176,6 @@ export default function App() {
           <Route path="profile" element={<UniProfile />} />
           <Route path="analytics" element={<UniAnalytics />} />
           <Route path="campaigns" element={<UniCampaigns />} />
-          <Route path="bookings" element={<UniBookings />} />
           <Route path="posts" element={<MyPosts />} />
         </Route>
 
@@ -203,7 +188,6 @@ export default function App() {
           <Route index element={<AgentDashboard />} />
           <Route path="profile" element={<AgentProfile />} />
           <Route path="posts" element={<MyPosts />} />
-          <Route path="bookings" element={<AgentBookings />} />
           <Route path="analytics" element={<AgentAnalytics />} />
         </Route>
 
@@ -216,7 +200,6 @@ export default function App() {
           <Route index element={<ConsultantDashboard />} />
           <Route path="profile" element={<ConsultantProfile />} />
           <Route path="posts" element={<MyPosts />} />
-          <Route path="bookings" element={<ConsultantBookings />} />
           <Route path="analytics" element={<ConsultantAnalytics />} />
         </Route>
 
@@ -228,24 +211,7 @@ export default function App() {
         }>
           <Route index element={<StudentDashboard />} />
           <Route path="profile" element={<StudentProfile />} />
-          <Route path="bookings" element={<StudentBookings />} />
           <Route path="posts" element={<MyPosts />} />
-        </Route>
-
-        {/* Meeting (LiveKit video) — bare layout, no dashboard chrome */}
-        <Route
-          path="/meeting/:bookingId"
-          element={<RequireAuth><MeetingRoom /></RequireAuth>}
-        />
-
-        {/* Messaging — available to all authenticated users */}
-        <Route path="/messages" element={
-          <RequireAuth>
-            <DashboardLayout />
-          </RequireAuth>
-        }>
-          <Route index element={<MessagesPage />} />
-          <Route path=":conversationId" element={<MessagesPage />} />
         </Route>
 
         {/* Static pages */}

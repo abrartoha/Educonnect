@@ -37,12 +37,6 @@ export const postsApi = {
   bookmarks: () => api.get('/posts/bookmarks'),
 };
 
-export const bookingsApi = {
-  list: () => api.get('/bookings'),
-  create: (payload) => api.post('/bookings', payload),
-  updateStatus: (id, status) => api.patch(`/bookings/${id}/status`, { status }),
-};
-
 export const leadsApi = {
   create: (payload) => api.post('/leads', payload),
   list: () => api.get('/leads'),
@@ -70,21 +64,4 @@ export const adminApi = {
   reactivate: (id) => api.post(`/admin/users/${id}/reactivate`),
   togglePostPin: (id) => api.post(`/admin/posts/${id}/pin`),
   setPostStatus: (id, status) => api.patch(`/admin/posts/${id}/status`, { status }),
-};
-
-// ---- meetings (LiveKit) ---------------------------------------------------
-export const meetingsApi = {
-  joinToken: (bookingId) => api.post(`/bookings/${bookingId}/meeting/token`),
-};
-
-// ---- messaging (1:1 chat over Socket.io) ----------------------------------
-export const messagingApi = {
-  listConversations: () => api.get('/messages/conversations'),
-  startConversation: (userId) => api.post('/messages/conversations', { userId }),
-  getConversation: (id) => api.get(`/messages/conversations/${id}`),
-  listMessages: (id, query) =>
-    api.get(`/messages/conversations/${id}/messages`, { query }),
-  sendMessage: (id, body) =>
-    api.post(`/messages/conversations/${id}/messages`, { body }),
-  markRead: (id) => api.post(`/messages/conversations/${id}/read`),
 };

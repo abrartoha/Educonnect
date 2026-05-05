@@ -11,25 +11,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.educonnect.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "EduConnect uses your camera during scheduled meetings.",
-        "NSMicrophoneUsageDescription": "EduConnect uses your microphone during scheduled meetings.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.educonnect.mobile",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.INTERNET",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.INTERNET",
-        "android.permission.FOREGROUND_SERVICE"
-      ]
+      "package": "com.educonnect.mobile"
     },
     "web": {
       "bundler": "metro"
@@ -43,9 +29,7 @@
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-secure-store",
-      "@react-native-community/datetimepicker",
-      "@livekit/react-native-expo-plugin"
+      "expo-secure-store"
     ],
     "owner": "abrartoha",
     "runtimeVersion": {

@@ -17,8 +17,6 @@ import CreatePostScreen from '../screens/posts/CreatePostScreen';
 import MyPostsScreen from '../screens/posts/MyPostsScreen';
 import BookmarksScreen from '../screens/posts/BookmarksScreen';
 
-import BookingsScreen from '../screens/business/BookingsScreen';
-import CreateBookingScreen from '../screens/business/CreateBookingScreen';
 import LeadsScreen from '../screens/business/LeadsScreen';
 import CampaignsScreen from '../screens/business/CampaignsScreen';
 
@@ -27,14 +25,6 @@ import RoleDashboardScreen from '../screens/dashboard/RoleDashboardScreen';
 import AdminOverviewScreen from '../screens/admin/AdminOverviewScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminPostsScreen from '../screens/admin/AdminPostsScreen';
-
-import MessagesListScreen from '../screens/messages/MessagesListScreen';
-import ConversationScreen from '../screens/messages/ConversationScreen';
-
-// Lazy wrapper — defers the @livekit/react-native import so Expo Go boots fine.
-import MeetingScreen from '../screens/meeting/MeetingScreenLazy';
-
-import MeetingNotifier from '../components/notifications/MeetingNotifier';
 
 import { colors } from '../theme';
 
@@ -71,13 +61,6 @@ function makeDirectoryStack(type, listName, detailName) {
         initialParams={{ type }}
       />
       <Stack.Screen name="PostDetail" component={PostDetailScreen} />
-      <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />
-      <Stack.Screen name="Conversation" component={ConversationScreen} />
-      <Stack.Screen
-        name="Meeting"
-        component={MeetingScreen}
-        options={{ presentation: 'fullScreenModal' }}
-      />
       {/* Compare lives on the Universities stack but is only opened there. */}
       {type === 'university' ? (
         <Stack.Screen name="Compare" component={CompareScreen} />
@@ -106,8 +89,6 @@ function ProfileStack() {
       <ProfileStackNav.Screen name="CreatePost" component={CreatePostScreen} />
       <ProfileStackNav.Screen name="PostDetail" component={PostDetailScreen} />
 
-      <ProfileStackNav.Screen name="Bookings" component={BookingsScreen} />
-      <ProfileStackNav.Screen name="CreateBooking" component={CreateBookingScreen} />
       <ProfileStackNav.Screen name="Leads" component={LeadsScreen} />
       <ProfileStackNav.Screen name="Campaigns" component={CampaignsScreen} />
 
@@ -115,26 +96,8 @@ function ProfileStack() {
       <ProfileStackNav.Screen name="AdminUsers" component={AdminUsersScreen} />
       <ProfileStackNav.Screen name="AdminPosts" component={AdminPostsScreen} />
 
-      <ProfileStackNav.Screen name="Conversation" component={ConversationScreen} />
-      <ProfileStackNav.Screen
-        name="Meeting"
-        component={MeetingScreen}
-        options={{ presentation: 'fullScreenModal' }}
-      />
-
       <ProfileStackNav.Screen name="Compare" component={CompareScreen} />
     </ProfileStackNav.Navigator>
-  );
-}
-
-// ---- Messages stack ------------------------------------------------------
-const MessagesStackNav = createNativeStackNavigator();
-function MessagesStack() {
-  return (
-    <MessagesStackNav.Navigator screenOptions={{ headerShown: false }}>
-      <MessagesStackNav.Screen name="MessagesList" component={MessagesListScreen} />
-      <MessagesStackNav.Screen name="Conversation" component={ConversationScreen} />
-    </MessagesStackNav.Navigator>
   );
 }
 
@@ -158,8 +121,6 @@ const TabIcon = ({ name, focused, color }) => (
 
 export default function MainTabs() {
   return (
-    <>
-    <MeetingNotifier />
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
@@ -206,13 +167,6 @@ export default function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Messages"
-        component={MessagesStack}
-        options={{
-          tabBarIcon: ({ focused, color }) => <TabIcon name="MessageSquare" focused={focused} color={color} />,
-        }}
-      />
-      <Tab.Screen
         name="Profile"
         component={ProfileStack}
         options={{
@@ -220,6 +174,5 @@ export default function MainTabs() {
         }}
       />
     </Tab.Navigator>
-    </>
   );
 }

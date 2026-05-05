@@ -22,18 +22,17 @@ import {
   TrendingUp,
   Building2,
   MessageSquare,
+  Send,
   Share2,
   UserCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useStore from '../../store/useStore';
-import { directoryApi, reviewsApi } from '../../api/endpoints';
+import { directoryApi, reviewsApi, leadsApi } from '../../api/endpoints';
 import { useApiResource } from '../../hooks/useApiResource';
 import { normaliseDirectoryItem } from '../../api/mappers';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import BookingModal from '../../components/booking/BookingModal';
-import MessageUserButton from '../../components/messaging/MessageUserButton';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,8 +70,7 @@ export default function AgentDetail() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  // currentUser used by parent for share/etc; BookingModal handles its own auth checks.
-  useStore();
+  const { isAuthenticated, currentUser } = useStore();
 
   const pathIsConsultant = location.pathname.startsWith('/consultants');
 
@@ -111,11 +109,14 @@ export default function AgentDetail() {
 
   // State
   const [activeTab, setActiveTab] = useState('about');
-  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+  const [enquiryMessage, setEnquiryMessage] = useState('');
+  const [submittingEnquiry, setSubmittingEnquiry] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get('book') === 'true') {
-      setShowBookingModal(true);
+    // ?book=true was the legacy query — keep it working as "open the enquiry".
+    if (searchParams.get('enquire') === 'true' || searchParams.get('book') === 'true') {
+      setShowEnquiryModal(true);
     }
   }, [searchParams]);
 
@@ -127,6 +128,35 @@ export default function AgentDetail() {
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast.success('Link copied to clipboard!');
+  };
+
+  const isSelf = currentUser?.id === entity?.id;
+
+  const handleSubmitEnquiry = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated || currentUser?.role !== 'student') {
+      toast.error('Sign in as a student to send an enquiry');
+      return;
+    }
+    if (enquiryMessage.trim().length < 10) {
+      toast.error('Add a bit more detail (at least 10 characters)');
+      return;
+    }
+    setSubmittingEnquiry(true);
+    try {
+      await leadsApi.create({
+        targetId: entity.id,
+        message: enquiryMessage.trim(),
+      });
+      toast.success('Enquiry sent — they will be in touch by email.');
+      setShowEnquiryModal(false);
+      setEnquiryMessage('');
+    } catch (err) {
+      const issue = err?.details?.issues?.[0];
+      toast.error(issue ? `${issue.path}: ${issue.message}` : err?.message || 'Could not send enquiry');
+    } finally {
+      setSubmittingEnquiry(false);
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -501,10 +531,10 @@ export default function AgentDetail() {
                             </div>
                           </div>
                           <button
-                            onClick={() => setShowBookingModal(true)}
+                            onClick={() => setShowEnquiryModal(true)}
                             className="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-700 hover:shadow-lg"
                           >
-                            Book Now
+                            Send enquiry
                           </button>
                         </div>
                       </div>
@@ -660,16 +690,13 @@ export default function AgentDetail() {
                 className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3"
               >
                 <button
-                  onClick={() => setShowBookingModal(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/25 transition-all hover:bg-primary-700 hover:shadow-lg active:scale-[0.98]"
+                  onClick={() => !isSelf && setShowEnquiryModal(true)}
+                  disabled={isSelf}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/25 transition-all hover:bg-primary-700 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  <Calendar size={16} />
-                  Book Consultation
+                  <Send size={16} />
+                  {isSelf ? 'This is your profile' : 'Send enquiry'}
                 </button>
-                <MessageUserButton
-                  targetUser={{ id: entity.id, name: entity.name }}
-                  className="w-full"
-                />
                 <button
                   onClick={handleShare}
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
@@ -718,11 +745,77 @@ export default function AgentDetail() {
 
       <Footer />
 
-      <BookingModal
-        open={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-        provider={{ id: entity.id, name: entity.name }}
-      />
+      {/* Enquiry modal — sends a Lead which the server emails to the target. */}
+      <AnimatePresence>
+        {showEnquiryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !submittingEnquiry && setShowEnquiryModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
+                    <Send size={18} className="text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Send enquiry</h3>
+                    <p className="text-sm text-slate-500">to {entity.name}</p>
+                  </div>
+                </div>
+              </div>
+              <form onSubmit={handleSubmitEnquiry} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Your message <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows={5}
+                    required
+                    minLength={10}
+                    maxLength={2000}
+                    value={enquiryMessage}
+                    onChange={(e) => setEnquiryMessage(e.target.value)}
+                    placeholder="Tell them what you're looking for, your timeline, and any specific questions…"
+                    className="mt-1 w-full resize-none rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">
+                    Sent as an email to {entity.name}. They'll reply directly to your inbox.
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEnquiryModal(false)}
+                    disabled={submittingEnquiry}
+                    className="flex-1 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingEnquiry}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <Send size={16} />
+                    {submittingEnquiry ? 'Sending…' : 'Send enquiry'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

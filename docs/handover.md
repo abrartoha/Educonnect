@@ -1,6 +1,6 @@
 ---
 title: "EduConnect — Developer Handover Documentation"
-date: "2026-05-02"
+date: "2026-05-05"
 ---
 
 # EduConnect — Developer Handover Documentation
@@ -11,17 +11,14 @@ This document describes the **server** (Express + Prisma) and **web client** (Re
 
 ## 1. Overview
 
-EduConnect is an in-app education marketplace connecting international students with Australian universities, education agents, and consultants. The core feature surface is:
+EduConnect is an education marketplace connecting international students with Australian universities, education agents, and consultants. The core feature surface is:
 
 - **Authentication & roles** — five roles: `ADMIN`, `UNIVERSITY`, `AGENT`, `CONSULTANT`, `STUDENT`. Role discriminates the User row in a single table; each non-admin role has a 1:1 profile table.
 - **Marketplace directories** — public listings for universities, agents, consultants. Includes a "compare universities" batch lookup.
 - **Posts / community feed** — categorised posts with upvotes, bookmarks, and threaded comments. Authors are users of any role.
-- **Bookings** — 1:1 meetings between any non-admin user and an agent / consultant / university provider. Statuses: PENDING → CONFIRMED → COMPLETED / CANCELLED.
-- **Leads** — student → university enquiry. Status flow: NEW → CONTACTED → CONVERTED / CLOSED.
+- **Enquiries (Leads)** — students send an enquiry to a university / agent / consultant. The server persists a `Lead` and sends an **email** to the recipient with the student's message. Status flow: NEW → CONTACTED → CONVERTED / CLOSED.
 - **Reviews** — students post star + body reviews on a target user (uni / agent / consultant). Each review recomputes the target's `rating` and `reviewCount`.
 - **Campaigns** — universities own marketing campaigns with start/end dates and ACTIVE/PAUSED/ENDED status.
-- **In-app messaging** — 1:1 conversations with persistent history and live delivery via Socket.io.
-- **In-app meetings** — LiveKit rooms tied 1:1 to bookings; in-app token mint with time-window guards.
 - **Admin panel** — list users, approve / suspend / reactivate non-student accounts, pin / hide / remove posts, dashboard counts.
 
 ---
@@ -37,8 +34,7 @@ EduConnect is an in-app education marketplace connecting international students 
 - **Password hashing:** Argon2id (OWASP-recommended params).
 - **Validation:** zod schemas applied via a `validate` middleware.
 - **Security:** Helmet (CSP, HSTS, frameguard, noSniff), CORS allow-list, CSRF (double-submit via `csrf-csrf`), `hpp` (HTTP parameter pollution), rate limits (`express-rate-limit`).
-- **Real-time:** `socket.io` attached to the same HTTP server; auth handshake via signed cookie or Bearer token.
-- **Video / audio:** `livekit-server-sdk` for token minting.
+- **Email:** `nodemailer` — uses configured SMTP if `SMTP_*` env vars are set, otherwise falls back to a free Ethereal test inbox in dev.
 - **Logging:** Pino + pino-http; pretty-print in dev, redaction of secrets.
 - **Cron:** `node-cron` for background jobs.
 
@@ -48,8 +44,6 @@ EduConnect is an in-app education marketplace connecting international students 
 - **Routing:** `react-router-dom` v6 with lazy-loaded routes.
 - **State:** Zustand (auth-only; all domain data is fetched per-page).
 - **HTTP:** custom fetch wrapper with CSRF token caching, silent refresh on 401, CSRF rotation on 403.
-- **Real-time:** `socket.io-client`.
-- **Video:** `@livekit/components-react` + `livekit-client` with custom focus-swap layout.
 - **UI bits:** `framer-motion`, `lucide-react`, `recharts`, `react-hot-toast`.
 
 ---
@@ -58,7 +52,7 @@ EduConnect is an in-app education marketplace connecting international students 
 
 ```
 client/                  React + Vite SPA
-server/                  Express API + Socket.io gateway + Prisma
+server/                  Express API + Prisma
 mobile/                  Expo React Native (out of scope here)
 prisma/                  (lives under server/) schema + migrations + seed
 docs/                    handover docs
@@ -70,7 +64,7 @@ README.md                first-run setup
 ```
 server/src/
   app.js                 Express app builder (middleware order, /api mount, error handlers)
-  server.js              HTTP server boot, Socket.io attach, cron start, graceful shutdown
+  server.js              HTTP server boot, cron start, graceful shutdown
 
   config/
     env.js               zod-validated env schema (fails boot on missing vars)
@@ -80,21 +74,20 @@ server/src/
     prisma.js            singleton PrismaClient
 
   jobs/
-    cron.js              expired refresh-token cleanup, campaign auto-end, booking auto-complete
+    cron.js              expired refresh-token cleanup, campaign auto-end
 
   modules/               feature folders — one per domain
     index.js             aggregates module routers under /api
     auth/                auth.{controller,routes,schema,service}.js
     posts/               posts.{controller,routes}.js + post.schema.js
     directory/           directory.{controller,routes}.js + profile.schema.js
-    business/            campaigns/bookings/leads/reviews controllers + business.{routes,schema}.js
-    meetings/            meetings.{controller,routes,service}.js (LiveKit token endpoint)
-    messaging/           messaging.{controller,routes,schema,service,gateway}.js (REST + Socket.io)
+    business/            campaigns/leads/reviews controllers + business.{routes,schema}.js
     admin/               admin.{controller,routes}.js
 
   shared/                cross-cutting concerns
     middleware/          auth, csrf, cors, errorHandler, securityHeaders, rateLimits, validate
     utils/               tokens, cookies, asyncHandler, password, errors
+    services/            email (nodemailer)
     validators/          common.schema (idParam, paginationQuery, emptyToUndef helper)
 ```
 
@@ -108,22 +101,16 @@ client/src/
     endpoints.js         typed API surface — one object per server module
     mappers.js           UPPER_SNAKE ↔ lower-kebab + nested→flat normalisers
   store/
-    useStore.js          auth-only Zustand store (currentUser, isAuthenticated, hydrate, login, logout)
+    useStore.js          auth-only Zustand store
   hooks/
-    useApiResource.js    generic data-fetching hook with refetch + optimistic-friendly setData
-  lib/
-    socket.js            Socket.io singleton (cookie auth)
+    useApiResource.js    generic data-fetching hook
   components/
     layout/              DashboardLayout, Navbar, Sidebar, Footer
-    booking/             BookingModal
-    meeting/             JoinMeetingButton
-    notifications/       GlobalNotifications (meeting:started toast)
-    messaging/           (per-message bubble in MessagesPage)
   pages/                 routed screens, grouped by role/feature
     auth/                Login, Signup
     admin/, university/, agent/, consultant/, student/
     marketplace/         Universities, Agents, Consultants, *Detail
-    feed/, messages/, meeting/, dashboard/MyPosts/, static/
+    feed/, dashboard/MyPosts/, static/
 ```
 
 ---
@@ -136,7 +123,7 @@ Validated in `server/src/config/env.js` (zod). The server **fails to boot** if a
 |---|---|---|
 | `NODE_ENV` | `development` \| `test` \| `production` (default `development`) | Toggles dev-only behaviour (pretty logs, looser cookie SameSite, error stack) |
 | `PORT` | int (default `5000`) | HTTP listener port; project conventionally uses `5050` |
-| `CLIENT_URL` | URL | Allow-listed origin for CORS and Socket.io |
+| `CLIENT_URL` | URL | Allow-listed origin for CORS |
 | `TRUST_PROXY` | `true` / `false` (default `false`) | Set `app.set('trust proxy', 1)` so `req.ip` works behind nginx/ALB |
 | `DATABASE_URL` | string ≥ 10 chars | Postgres connection URL |
 | `COOKIE_SECRET` | string ≥ 32 chars | Signs the access/refresh cookies |
@@ -149,11 +136,8 @@ Validated in `server/src/config/env.js` (zod). The server **fails to boot** if a
 | `RATE_LIMIT_MAX` | int (default `300`) | API rate-limit max per window |
 | `AUTH_RATE_LIMIT_MAX` | int (default `10`) | Login/refresh max failed attempts per window |
 | `LOG_LEVEL` | `trace`–`fatal` (default `info`) | Pino log level |
-| `LIVEKIT_URL` | URL starting with `wss://` | LiveKit WebSocket server URL |
-| `LIVEKIT_API_KEY` | string ≥ 8 chars | LiveKit API key |
-| `LIVEKIT_API_SECRET` | string ≥ 16 chars | LiveKit API secret (also signs webhooks) |
-
-Server `.env.example` is committed; copy to `.env` and fill in. Frontend has no `.env` requirements — it talks to `/api` same-origin in dev (Vite proxy).
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | optional | If all four are set, used as the email transport. Otherwise the server falls back to Ethereal test inbox (preview URL logged per email). |
+| `EMAIL_FROM` | string (default `EduConnect <noreply@educonnect.com.au>`) | "From" address on enquiry emails. |
 
 ---
 
@@ -170,7 +154,6 @@ Tier:           FREE, PREMIUM, ENTERPRISE
 PostStatus:     PUBLISHED, HIDDEN, REMOVED
 PostCategory:   SCHOLARSHIPS, VISA_TIPS, COURSES, CAMPUS_LIFE, CAREER, STUDENT_LIFE, EVENTS
 MediaType:      NONE, IMAGE, VIDEO
-BookingStatus:  PENDING, CONFIRMED, COMPLETED, CANCELLED
 LeadStatus:     NEW, CONTACTED, CONVERTED, CLOSED
 CampaignStatus: DRAFT, ACTIVE, PAUSED, ENDED
 ```
@@ -198,28 +181,17 @@ CampaignStatus: DRAFT, ACTIVE, PAUSED, ENDED
 
 - **`Review`** — `reviewerId`, `targetId`, `targetRole` (UNIVERSITY/AGENT/CONSULTANT), `rating` (1-5), `title?`, `body`, `verified`. Unique on `(reviewerId, targetId)`.
 
-### Bookings + meetings
+### Enquiries / Leads
 
-- **`Booking`** — `studentId` (the BOOKER, regardless of role), `providerId`, `subject`, `notes`, `scheduledAt`, `durationMinutes` (default 30), `mode` (`video`/`phone`/`in-person`, default `video`), `status` (default PENDING). 1:1 to `Meeting`.
-- **`Meeting`** — `bookingId @unique`, `roomName @unique` (random UUID, never the bookingId), `maxParticipants` (default 2), `startedAt`, `endedAt`, timestamps.
-
-### Leads
-
-- **`Lead`** — `studentId`, `universityId`, `programme?`, `message`, `status` (default NEW), timestamps.
+- **`Lead`** — `studentId`, `targetId`, `targetRole` (UNIVERSITY/AGENT/CONSULTANT), `programme?`, `message`, `status` (default NEW), timestamps. Indexed on `(targetId, status)`.
 
 ### Campaigns
 
 - **`Campaign`** — `universityId`, `name`, `audience`, `startDate`, `endDate`, `status` (default DRAFT), `impressions`, `clicks`.
 
-### Messaging
-
-- **`Conversation`** — `userAId` and `userBId` stored in **canonical sorted order** so `(userAId < userBId)` and the pair is unique. Holds `lastMessageAt` for ordering.
-- **`Message`** — `conversationId`, `senderId`, `body`, `createdAt`. Indexed on `(conversationId, createdAt)`.
-- **`ConversationRead`** — composite `(conversationId, userId)` cursor with `lastReadAt`. Used to compute unread counts.
-
 ### Audit log
 
-- **`AuditLog`** — `actorId?`, `action`, `entityType`, `entityId?`, `meta: Json?`, `ip`, `userAgent`, timestamps. Used for moderation + meeting-token issuance trail.
+- **`AuditLog`** — `actorId?`, `action`, `entityType`, `entityId?`, `meta: Json?`, `ip`, `userAgent`, timestamps. Used for moderation.
 
 ---
 
@@ -256,14 +228,12 @@ Helmet configures CSP (`default-src 'none'`, `connect-src 'self'`, `frame-ancest
 - **API limiter:** mounted on `/api`. Window `RATE_LIMIT_WINDOW_MS`, max `RATE_LIMIT_MAX`. Key by user id (falls back to IP).
 - **Auth limiter:** login + refresh. `skipSuccessfulRequests: true` so only failed attempts count.
 - **Signup limiter:** 5 / hour, IP-based.
-- **Token mint limiter:** 10 / minute / user (in `meetings.routes.js`).
-- **Send-message limiter:** 60 / minute / user (in `messaging.routes.js`).
 
 ### Other guards
 
 - `hpp` on every request (HTTP parameter pollution).
 - `compression`, `cookie-parser` with `COOKIE_SECRET`, body limit `100kb`.
-- Pino redacts `Authorization`, `Cookie`, `Set-Cookie`, `*.password`, `*.passwordHash`, `*.token`, `*.accessToken`, `*.refreshToken`, `*.LIVEKIT_API_SECRET`, `*.apiSecret`.
+- Pino redacts `Authorization`, `Cookie`, `Set-Cookie`, `*.password`, `*.passwordHash`, `*.token`, `*.accessToken`, `*.refreshToken`, `*.SMTP_PASS`.
 
 ---
 
@@ -294,11 +264,7 @@ All paths are prefixed with `/api`. JSON in / JSON out.
 | `POST /logout` | Required | Yes | `{ refreshToken? }` | Revokes the presented refresh token, clears cookies. |
 | `GET /me` | Optional | — | — | Returns `{ user }` or `{ user: null }`. |
 
-`signupSchema` requires email (≤254), strong password (≥8 with upper/lower/digit), name (2–120), `role` discriminator, and role-specific optional fields (uni: shortName/location/type/description/website/phone; agent: contactPerson/phone/location/description/maraNumber/yearsExperience; consultant: phone/location/description/yearsExperience/hourlyRate; student: phone/nationality/currentEducation/interestedIn/preferredLocations/budgetMin/Max).
-
 ### 7.3 Directory (`/api/{universities,agents,consultants,students}`)
-
-Public for listings; profile updates require the matching role.
 
 | Method & path | Auth | Role | Body | Description |
 |---|---|---|---|---|
@@ -329,9 +295,9 @@ Public for listings; profile updates require the matching role.
 
 `createPostSchema`: `title` (3-200), `content` (10-10000), `category` (enum), `mediaType` (default `NONE`), `mediaUrl?` (URL), `tags[]` (max 5).
 
-### 7.5 Bookings + business (`/api`)
+### 7.5 Business (`/api`)
 
-These all live in the `business` module router and are mounted at the root of `/api` (no extra prefix). Bookings allow any non-admin role as the booker, and AGENT / CONSULTANT / UNIVERSITY as the provider.
+These all live in the `business` module router and are mounted at the root of `/api` (no extra prefix).
 
 | Method & path | Auth | Role | Body | Description |
 |---|---|---|---|---|
@@ -339,58 +305,22 @@ These all live in the `business` module router and are mounted at the root of `/
 | `POST /campaigns` | Required | UNIVERSITY | `createCampaignSchema` | Create campaign (refines `endDate ≥ startDate`). |
 | `PATCH /campaigns/:id` | Required | UNIVERSITY | `updateCampaignSchema` | Owner only. |
 | `DELETE /campaigns/:id` | Required | UNIVERSITY | — | Owner only. |
-| `GET /bookings` | Required | — | — | Returns bookings where the caller is on either side. |
-| `POST /bookings` | Required | STUDENT/AGENT/CONSULTANT/UNIVERSITY | `createBookingSchema` | Self-booking blocked. Provider must be AGENT/CONSULTANT/UNIVERSITY. |
-| `PATCH /bookings/:id/status` | Required | — | `updateBookingStatusSchema` | Booker can only CANCEL. Provider can CONFIRMED/COMPLETED/CANCELLED. |
-| `GET /leads` | Required | UNIVERSITY | — | Leads sent to caller's university. |
-| `GET /leads/mine` | Required | STUDENT | — | Leads the student submitted. |
-| `POST /leads` | Required | STUDENT | `createLeadSchema` | Bumps `inquiries` on the uni profile (transactional). |
-| `PATCH /leads/:id/status` | Required | UNIVERSITY | `updateLeadStatusSchema` | Owner uni only. |
+| `GET /leads` | Required | UNI/AGENT/CONSULTANT | — | Enquiries received by the caller. |
+| `GET /leads/mine` | Required | STUDENT | — | Enquiries the student has submitted. |
+| `POST /leads` | Required | STUDENT | `createLeadSchema` | Persists a `Lead` and **emails the recipient**. Bumps `inquiries` on `UniversityProfile` for university targets. |
+| `PATCH /leads/:id/status` | Required | UNI/AGENT/CONSULTANT | `updateLeadStatusSchema` | Recipient (target) only. |
 | `GET /reviews/target/:id` | Public | — | — | Reviews about a target user. |
 | `POST /reviews` | Required | STUDENT | `createReviewBodySchema` | Target must be active UNI/AGENT/CONSULTANT (can't self-review). One review per (reviewer, target). Recomputes `rating` + `reviewCount` on the profile. |
 
-Booking validation: `subject` (3-200), `scheduledAt` (date), `durationMinutes` (10-240, default 30), `mode` (`video`/`phone`/`in-person`, default `video`), `notes?`.
+`createLeadSchema`: `targetId` (cuid string), `programme?` (≤ 200), `message` (10–2000).
 
-### 7.6 Meetings (`/api`)
-
-| Method & path | Auth | CSRF | Body | Description |
-|---|---|---|---|---|
-| `POST /bookings/:id/meeting/token` | Required | Yes | — | Mints a 15-min LiveKit JWT scoped to the meeting's room. Rate-limit 10/min/user. |
-
-Server-side guards (in `meetings.service.js`):
-
-1. Caller must be the booker or the provider on the booking.
-2. Booking must be `CONFIRMED`.
-3. Booking `mode` must be `video` or `phone` (`in-person` rejected).
-4. Current time must be within `scheduledAt − 15 min` and `scheduledAt + duration + 15 min`.
-5. The user must not already have another active meeting in a still-open join window (single concurrent session).
-6. `Meeting.startedAt` is stamped on the first token issuance and a `meeting:started` event is emitted via Socket.io to the other party's personal room.
-7. Every issuance is appended to `AuditLog` with `action: meeting.token_issued`, `meetingId`, `userId`, `ip`, `userAgent`.
-
-Token grant: `roomJoin`, `canPublish`, `canSubscribe`, `canPublishData`. Identity is `userId`; display name is `user.name`. TTL 15 min.
-
-Response: `{ token, wsUrl, roomName, meetingId, mode, expiresIn }`.
-
-### 7.7 Messaging (`/api/messages`)
-
-All endpoints require auth. Anyone can message anyone (other than themselves). Suspended users are not addressable.
-
-| Method & path | CSRF | Body / query | Description |
-|---|---|---|---|
-| `GET /conversations` | — | — | Caller's conversations sorted by `lastMessageAt`, with last-message preview and unread count. |
-| `POST /conversations` | Yes | `{ userId }` | Get-or-create the conversation with `userId`. Pairs are stored in canonical sorted order (one row per pair). |
-| `GET /conversations/:id` | — | — | Single conversation header. |
-| `GET /conversations/:id/messages?before=&limit=` | — | `listMessagesQuery` | Cursor-paginated descending; client reverses for display. |
-| `POST /conversations/:id/messages` | Yes | `{ body }` (1–4000) | Persists, bumps `lastMessageAt`, broadcasts via Socket.io. Rate-limit 60/min/user. |
-| `POST /conversations/:id/read` | Yes | — | Upserts the caller's `ConversationRead.lastReadAt` to now. |
-
-### 7.8 Admin (`/api/admin`)
+### 7.6 Admin (`/api/admin`)
 
 All endpoints require AUTH + role ADMIN.
 
 | Method & path | Body / query | Description |
 |---|---|---|
-| `GET /overview` | — | `{ counts: { universities, agents, consultants, students, posts, pendingApprovals, bookings, leads } }` |
+| `GET /overview` | — | `{ counts: { universities, agents, consultants, students, posts, pendingApprovals, leads } }` |
 | `GET /users` | `?role=&status=&q=&page=&limit=` | Paginated users with profiles. |
 | `POST /users/:id/approve` | — | Sets status ACTIVE and `verified=true` on the profile. UNI/AGENT/CONSULTANT only. |
 | `POST /users/:id/suspend` | — | Sets status SUSPENDED **and revokes all refresh tokens** for the user. |
@@ -400,36 +330,16 @@ All endpoints require AUTH + role ADMIN.
 
 ---
 
-## 8. Real-time / Socket.io
+## 8. Email service (enquiries)
 
-Attached to the same HTTP server. Path: `/socket.io`. CORS uses `CLIENT_URL`.
+Implemented in `server/src/shared/services/email.js`. One transporter is built lazily on the first call:
 
-### Authentication
+- If `SMTP_HOST` + `SMTP_PORT` + `SMTP_USER` + `SMTP_PASS` are all set → real SMTP.
+- Otherwise → `nodemailer.createTestAccount()` spins up an Ethereal inbox at runtime and every send is logged with a preview URL.
 
-`io.use` runs on every connection. Resolves the user by either:
+`sendEnquiryEmail({ to, targetName, studentName, studentEmail, programme, message })` composes a styled HTML + plain-text email. The recipient's inbox sees the student's name, programme of interest (if provided), and the message body. `Reply-To` is the student's email so a direct reply lands back to them.
 
-1. Bearer token sent via `socket.handshake.auth.token` (mobile / API clients), or
-2. The signed `em_access` cookie parsed identically to Express (web).
-
-Suspended users are rejected. Failed handshakes emit a `Socket auth rejected` log line.
-
-### Rooms
-
-Each socket joins:
-
-- `user:<userId>` — personal room used for cross-tab notifications (new message, meeting started).
-- `conv:<conversationId>` — joined explicitly via `conversation:join` (server re-checks participation against the DB).
-
-### Events
-
-| Direction | Event | Payload | Notes |
-|---|---|---|---|
-| client → server | `conversation:join` | `(conversationId, ack)` | Server validates participation, joins the room, calls ack `{ ok: true }` or `{ ok: false, error }`. |
-| client → server | `conversation:leave` | `(conversationId)` | No ack. |
-| server → client | `message:new` | `{ conversationId, message }` | Emitted to `conv:<id>` AND both participants' `user:<id>` rooms. |
-| server → client | `meeting:started` | `{ bookingId, meetingId, startedBy: { id, name }, mode, subject }` | Emitted only to the OTHER party's `user:<id>` room when the first token is minted. |
-
-The client should replay the personal room subscription on `connect` (Socket.io reconnects automatically).
+The `createLead` controller awaits the DB write, then calls `sendEnquiryEmail` in a fire-and-forget `Promise.catch` that logs failures — slow SMTP never blocks the HTTP response.
 
 ---
 
@@ -440,10 +350,10 @@ The client should replay the personal room subscription on `connect` (Socket.io 
 Layered:
 
 - `RedirectIfAuthed` for `/login`, `/signup` — bounces to `/` if already signed in.
-- `RequireAuth` for marketplace, feed, post detail, /messages, /meeting/:bookingId, static pages.
+- `RequireAuth` for marketplace, feed, post detail, static pages.
 - `ProtectedRoute allowedRoles=[…]` for the role dashboards (`/admin`, `/university`, `/agent`, `/consultant`, `/student`) — wraps `<DashboardLayout />`.
 
-`<ScrollToTop />` resets scroll on every navigation. `<GlobalNotifications />` mounts at app root and shows a toast with a "Join now" button on `meeting:started`.
+`<ScrollToTop />` resets scroll on every navigation.
 
 ### Auth + state (`store/useStore.js`)
 
@@ -473,7 +383,7 @@ A single fetch wrapper with:
 
 ### Endpoints (`api/endpoints.js`)
 
-One object per server module: `authApi`, `directoryApi`, `postsApi`, `reviewsApi`, `campaignsApi`, `bookingsApi`, `meetingsApi`, `messagingApi`, `leadsApi`, `adminApi`. Mirrors the REST surface 1:1.
+One object per server module: `authApi`, `directoryApi`, `postsApi`, `reviewsApi`, `campaignsApi`, `leadsApi`, `adminApi`. Mirrors the REST surface 1:1.
 
 ### Mappers (`api/mappers.js`)
 
@@ -482,8 +392,8 @@ Bridges the **server** vocabulary (UPPER_SNAKE enums, nested `user.university`/`
 - `ROLE_FROM_API` / `ROLE_TO_API`
 - `CATEGORY_FROM_API` / `CATEGORY_TO_API`
 - `MEDIA_FROM_API` / `MEDIA_TO_API`
-- `BOOKING_STATUS_FROM_API`, `LEAD_STATUS_FROM_API`, `CAMPAIGN_STATUS_FROM_API`
-- `normalisePost(p)`, `normaliseDirectoryItem(u)`, `normaliseBooking(b)`, `normaliseLead(l)`, `normaliseCampaign(c)` — pages call these after `useApiResource(...)`.
+- `LEAD_STATUS_FROM_API`, `CAMPAIGN_STATUS_FROM_API`
+- `normalisePost(p)`, `normaliseDirectoryItem(u)`, `normaliseLead(l)`, `normaliseCampaign(c)` — pages call these after `useApiResource(...)`.
 
 ### Data fetching (`hooks/useApiResource.js`)
 
@@ -494,29 +404,22 @@ Generic hook designed for React 19 / Strict Mode:
 - Spinner only on the **initial** load — refetches keep stale data on screen so actions don't flash.
 - Returns `{ data, loading, error, refetch, setData }`. `setData` is used for optimistic updates.
 
-### Realtime client (`lib/socket.js`)
+### Notable UI
 
-Singleton `io()` connection initialised on first call. Reuses the cookie session for auth (mobile uses `auth.token` + `tokenStorage`).
-
-### Notable UI components
-
-- **`BookingModal`** — subject, date, time, duration, mode toggle, notes. Validates client-side (subject ≥ 3 chars, future time, can't book self / admin). Surfaces server zod issues by `path: message`.
-- **`JoinMeetingButton`** — mirrors the server's join-window. Renders nothing outside the window or for `in-person` bookings; shows "Opens in N min" before, "Join meeting" / "Start call" inside. Phone bookings use a `Phone` icon.
-- **`MeetingRoom`** (in `pages/meeting/`) — fetches `meetingsApi.joinToken`, mounts `<LiveKitRoom>`, custom focus-swap layout (large remote + PiP local, click to swap), themed control bar, in-meeting `<Chat />` panel, "waiting for the other party" overlay, brand colour overrides via CSS variables (`livekitTheme`).
-- **`MessagesPage`** — two-pane: conversation list (left) + thread (right). Marks read on open. Uses optimistic-insert for outgoing messages (temp id swapped for the server-returned message).
-- **`GlobalNotifications`** — listens for `meeting:started` on the personal room, shows a toast with **Join now** / **Later**.
+- **Marketplace detail pages** (`AgentDetail.jsx`, `UniversityDetail.jsx`) have a single **Send enquiry** CTA. Submitting writes a Lead and triggers the server-side email.
+- **Student dashboard** shows a list of submitted enquiries with status (NEW/CONTACTED/CONVERTED/CLOSED).
+- **University / Agent / Consultant dashboards** show received enquiries; status can be updated via `PATCH /api/leads/:id/status`.
 
 ---
 
 ## 10. Background jobs (`jobs/cron.js`)
 
-Three jobs. Timezone Australia/Melbourne.
+Two jobs. Timezone Australia/Melbourne.
 
 | Job | Schedule | Action |
 |---|---|---|
 | `cleanupRefreshTokens` | `10 2 * * *` | Deletes refresh tokens that are expired or revoked > 30 days. |
 | `endExpiredCampaigns` | `0 * * * *` | `Campaign.status: ACTIVE → ENDED` where `endDate < now`. |
-| `completePastBookings` | `30 * * * *` | `Booking.status: CONFIRMED → COMPLETED` where `scheduledAt < now − 1h`. |
 
 Started via `startCronJobs()` after `app.listen`. Stopped via `stopCronJobs()` during graceful shutdown (SIGINT / SIGTERM). The HTTP server then drains, Prisma disconnects, with a 10s force-exit fallback.
 
@@ -560,7 +463,7 @@ Tiny wrapper used on every async route handler so thrown errors propagate to the
 - Pino + pino-http; pretty in dev.
 - Auto-skip `/api/health` to avoid noise.
 - Per-request: log level upgraded to `error` on 5xx, `warn` on 4xx.
-- Redacted: `Authorization`, `Cookie`, `Set-Cookie`, password fields, JWTs / opaque tokens, LiveKit secret-like keys.
+- Redacted: `Authorization`, `Cookie`, `Set-Cookie`, password fields, JWTs / opaque tokens, SMTP_PASS.
 
 ---
 
@@ -577,11 +480,6 @@ npm run seed               # repopulates demo data
 ### Graceful shutdown
 
 `SIGINT` / `SIGTERM` triggers cron stop, HTTP drain, and `prisma.$disconnect()`. Force-exit timer at 10s. Unhandled rejections / uncaught exceptions log fatal and `process.exit(1)`.
-
-### Crash boundaries
-
-- `process.on('unhandledRejection')` → fatal log + exit.
-- `process.on('uncaughtException')` → fatal log + exit.
 
 ### Prisma client
 
@@ -604,16 +502,14 @@ src/
     auth/{auth.controller, auth.routes, auth.schema, auth.service}.js
     posts/{posts.controller, posts.routes, post.schema}.js
     directory/{directory.controller, directory.routes, profile.schema}.js
-    business/{campaigns,bookings,leads,reviews}.controller.js
+    business/{campaigns,leads,reviews}.controller.js
               business.{routes,schema}.js
-    meetings/{meetings.controller, meetings.routes, meetings.service}.js
-    messaging/{messaging.controller, messaging.routes, messaging.schema,
-               messaging.service, messaging.gateway}.js
     admin/{admin.controller, admin.routes}.js
   shared/
     middleware/{auth, csrf, cors, errorHandler, securityHeaders,
                 rateLimits, validate}.js
     utils/{tokens, cookies, asyncHandler, password, errors}.js
+    services/email.js
     validators/common.schema.js
 prisma/
   schema.prisma, seed.js, migrations/*
@@ -627,12 +523,8 @@ src/
   api/{client, endpoints, mappers}.js
   store/useStore.js
   hooks/useApiResource.js
-  lib/socket.js
   components/
     layout/{DashboardLayout, Navbar, Sidebar, Footer}.jsx
-    booking/BookingModal.jsx
-    meeting/JoinMeetingButton.jsx
-    notifications/GlobalNotifications.jsx
   pages/
     auth/{Login, Signup}.jsx
     feed/(via Feed.jsx, PostDetail.jsx)
@@ -640,16 +532,12 @@ src/
                  UniversityDetail, AgentDetail}.jsx
     admin/{AdminDashboard, ManageUniversities, ManageAgents,
             ManageConsultants, ManagePosts, AdminSettings}.jsx
-    university/{UniDashboard, UniProfile, UniAnalytics,
-                 UniCampaigns, UniBookings}.jsx
-    agent/{AgentDashboard, AgentProfile, AgentBookings,
-            AgentAnalytics}.jsx
+    university/{UniDashboard, UniProfile, UniAnalytics, UniCampaigns}.jsx
+    agent/{AgentDashboard, AgentProfile, AgentAnalytics}.jsx
     consultant/{ConsultantDashboard, ConsultantProfile,
-                 ConsultantBookings, ConsultantAnalytics}.jsx
-    student/{StudentDashboard, StudentProfile, StudentBookings}.jsx
+                 ConsultantAnalytics}.jsx
+    student/{StudentDashboard, StudentProfile}.jsx
     dashboard/MyPosts.jsx
-    messages/MessagesPage.jsx
-    meeting/MeetingRoom.jsx (+ meeting.css)
     static/* (about, contact, faq, blog, privacy, terms, …)
 ```
 

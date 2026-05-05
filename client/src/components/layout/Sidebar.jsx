@@ -9,11 +9,8 @@ import {
   Settings,
   UserCircle,
   Megaphone,
-  Target,
   GraduationCap,
-  CalendarCheck,
   Newspaper,
-  MessageSquare,
   X,
 } from 'lucide-react';
 import useStore from '../../store/useStore';
@@ -25,15 +22,12 @@ const menuByRole = {
     { name: 'Agents', path: '/admin/agents', icon: Users },
     { name: 'Consultants', path: '/admin/consultants', icon: UserCheck },
     { name: 'Posts', path: '/admin/posts', icon: Newspaper },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Settings', path: '/admin/settings', icon: Settings },
   ],
   university: [
     { name: 'Dashboard', path: '/university', icon: LayoutDashboard },
     { name: 'Profile', path: '/university/profile', icon: UserCircle },
     { name: 'Posts', path: '/university/posts', icon: Newspaper },
-    { name: 'Bookings', path: '/university/bookings', icon: CalendarCheck },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Campaigns', path: '/university/campaigns', icon: Megaphone },
     { name: 'Analytics', path: '/university/analytics', icon: BarChart3 },
   ],
@@ -41,16 +35,12 @@ const menuByRole = {
     { name: 'Dashboard', path: '/agent', icon: LayoutDashboard },
     { name: 'Profile', path: '/agent/profile', icon: UserCircle },
     { name: 'Posts', path: '/agent/posts', icon: Newspaper },
-    { name: 'Bookings', path: '/agent/bookings', icon: CalendarCheck },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Analytics', path: '/agent/analytics', icon: BarChart3 },
   ],
   consultant: [
     { name: 'Dashboard', path: '/consultant', icon: LayoutDashboard },
     { name: 'Profile', path: '/consultant/profile', icon: UserCircle },
     { name: 'Posts', path: '/consultant/posts', icon: Newspaper },
-    { name: 'Bookings', path: '/consultant/bookings', icon: CalendarCheck },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Analytics', path: '/consultant/analytics', icon: BarChart3 },
   ],
   student: [
@@ -58,8 +48,6 @@ const menuByRole = {
     { name: 'Profile', path: '/student/profile', icon: UserCircle },
     { name: 'Universities', path: '/universities', icon: Building2 },
     { name: 'Agents', path: '/agents', icon: Users },
-    { name: 'Bookings', path: '/student/bookings', icon: CalendarCheck },
-    { name: 'Messages', path: '/messages', icon: MessageSquare },
     { name: 'Feed', path: '/feed', icon: Newspaper },
   ],
 };

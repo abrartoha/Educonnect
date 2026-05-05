@@ -3,10 +3,6 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { prisma } from './db/prisma.js';
 import { startCronJobs, stopCronJobs } from './jobs/cron.js';
-import {
-  initMessagingGateway,
-  closeMessagingGateway,
-} from './modules/messaging/messaging.gateway.js';
 
 const app = buildApp();
 
@@ -15,14 +11,10 @@ const server = app.listen(env.PORT, () => {
   startCronJobs();
 });
 
-// Attach Socket.io to the same HTTP server.
-initMessagingGateway(server);
-
 // Graceful shutdown — drain connections, close DB, stop crons.
 const shutdown = async (signal) => {
   logger.info(`${signal} received — shutting down gracefully`);
   stopCronJobs();
-  await closeMessagingGateway().catch(() => {});
   server.close(async () => {
     await prisma.$disconnect().catch(() => {});
     process.exit(0);

@@ -1,16 +1,16 @@
 # EduConnect
 
-In-app education marketplace connecting international students with Australian universities, agents, and consultants.
+Education marketplace connecting international students with Australian universities, agents, and consultants.
 
 A monorepo with three workspaces:
 
 | Workspace | Stack | Port |
 |---|---|---|
-| `server/` | Node 20, Express, Prisma, PostgreSQL, Socket.io, LiveKit | `5050` |
+| `server/` | Node 20, Express, Prisma, PostgreSQL, nodemailer | `5050` |
 | `client/` | React 19, Vite, Tailwind, Zustand, React Router | `5173` |
-| `mobile/` | React Native, Expo SDK 54, React Navigation, LiveKit RN | `8081` (Metro) |
+| `mobile/` | React Native, Expo SDK 54, React Navigation | `8081` (Metro) |
 
-Features: feed, marketplace, role-based auth, bookings, in-app messaging (WebSocket), and in-app video/phone meetings (LiveKit).
+Features: feed, marketplace, role-based auth, posts, reviews, campaigns, and **email-backed enquiries** (students send enquiries to universities / agents / consultants and the recipient gets an email).
 
 ---
 
@@ -18,10 +18,7 @@ Features: feed, marketplace, role-based auth, bookings, in-app messaging (WebSoc
 
 - **Node.js 20+** and npm
 - **PostgreSQL 14+** running locally (or a hosted DB you can connect to)
-- A free **LiveKit Cloud** account at [livekit.io](https://livekit.io) — needed for video/phone meetings
-- For mobile development:
-  - **Expo Go** app on your phone (works for everything except joining meetings)
-  - **EAS CLI** for a custom dev build that supports the meeting screen: `npm install -g eas-cli`
+- **Expo Go** app on your phone for the mobile workspace (optional)
 
 ---
 
@@ -48,7 +45,15 @@ cp server/.env.example server/.env
 | `DATABASE_URL` | Your local Postgres URL, e.g. `postgresql://user@localhost:5432/educonnect?schema=public` |
 | `CLIENT_URL` | `http://localhost:5173` for dev |
 | `COOKIE_SECRET`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `CSRF_SECRET` | Generate four random 64-char hex strings: `node -e "console.log(crypto.randomBytes(32).toString('hex'))"` |
-| `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | LiveKit Cloud dashboard → Settings → Keys → "Add Key" |
+
+### Optional email env vars in `server/.env`
+
+| Var | Notes |
+|---|---|
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Configure to use a real SMTP server (production). |
+| `EMAIL_FROM` | Defaults to `EduConnect <noreply@educonnect.com.au>` |
+
+Leave the SMTP vars blank in dev — the server falls back to a free **Ethereal** test inbox automatically. Each enquiry email logs a preview URL you can open in the browser to verify it. No signup required.
 
 ### Migrate + seed the database
 
@@ -64,9 +69,9 @@ npm run seed             # populates demo users, posts, etc.
 In three separate terminals:
 
 ```bash
-npm run dev:server       # API + WebSocket gateway → http://localhost:5050
-npm run dev:client       # web SPA              → http://localhost:5173
-npm run dev:mobile       # Expo Metro bundler   → scan QR with Expo Go
+npm run dev:server       # API → http://localhost:5050
+npm run dev:client       # web SPA → http://localhost:5173
+npm run dev:mobile       # Expo Metro bundler → scan QR with Expo Go
 ```
 
 For mobile on a physical device, your phone must be on the same Wi-Fi as your laptop. Metro auto-detects the LAN IP.
@@ -77,30 +82,23 @@ For mobile on a physical device, your phone must be on the same Wi-Fi as your la
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | `admin@educonnect.com.au` | `admin123` |
-| University | `admissions@unimelb.edu.au` | `password123` |
-| Agent | `sarah@pacificedu.com.au` | `password123` |
-| Consultant | `emma.thompson@educonsult.com.au` | `password123` |
-| Student | `arun.kumar@gmail.com` | `password123` |
+| Admin | `admin@educonnect.com.au` | `Admin12345` |
+| University | `admissions@unimelb.edu.au` | `Password123` |
+| Agent | `sarah@pacificedu.com.au` | `Password123` |
+| Consultant | `emma.thompson@educonsult.com.au` | `Password123` |
+| Student | `arun.kumar@gmail.com` | `Password123` |
 
 ---
 
-## In-app meetings (LiveKit)
+## Enquiries (email-backed)
 
-The web app works out of the box once `LIVEKIT_*` env vars are set.
+Students can send an enquiry from any university / agent / consultant detail page. The server:
 
-For the mobile app to join meetings, you need a **custom dev build** (Expo Go can't run native WebRTC):
+1. Persists a `Lead` row.
+2. Sends an HTML email to the target's address with the student's message and reply-to set to the student's email.
+3. Surfaces the enquiry inside the recipient's dashboard so they can update its status (NEW → CONTACTED → CONVERTED / CLOSED).
 
-```bash
-cd mobile
-eas login
-eas init                                            # one-time, links the project
-eas build --profile development --platform android  # or --platform ios
-```
-
-Install the resulting build on your device, then `npm run dev:mobile` from the repo root and open the new app instead of Expo Go.
-
-Without a dev build, all other mobile features still work — only the meeting screen is gated.
+In dev (no SMTP configured) the server prints an Ethereal preview URL for every email — open it in the browser to inspect what the recipient would receive.
 
 ---
 
@@ -108,30 +106,31 @@ Without a dev build, all other mobile features still work — only the meeting s
 
 ```
 client/src/
-  pages/                  -- top-level routes (auth, marketplace, dashboards, messages, meeting)
-  components/             -- shared UI (booking modal, meeting button, message button, etc.)
-  api/                    -- typed API client + endpoint definitions
-  lib/                    -- socket.io singleton
+  pages/                  -- top-level routes (auth, marketplace, dashboards, posts, static)
+  components/             -- shared UI (layout, etc.)
+  api/                    -- typed API client + endpoint definitions + mappers
   store/                  -- Zustand store + auth hydration
+  hooks/                  -- useApiResource
 
 server/src/
-  app.js, server.js       -- Express app + HTTP server + Socket.io attach
+  app.js, server.js       -- Express app + HTTP server + graceful shutdown
   config/                 -- env schema (zod) + Pino logger
   db/                     -- Prisma client singleton
-  modules/                -- one folder per feature (auth, posts, directory, business,
-                             meetings, messaging, admin)
+  modules/                -- one folder per feature (auth, posts, directory,
+                             business, admin)
   shared/
     middleware/           -- helmet, CORS, CSRF, rate limits, validate, errorHandler
     utils/                -- tokens, cookies, password, asyncHandler, errors
+    services/             -- email (nodemailer)
     validators/           -- common zod schemas (idParam, etc.)
-  jobs/                   -- node-cron jobs (token cleanup, booking auto-completion)
+  jobs/                   -- node-cron jobs (token cleanup, campaign auto-end)
 
 mobile/src/
-  screens/                -- one folder per feature (feed, marketplace, business,
-                             messages, meeting, profile, admin)
-  components/             -- shared UI (avatar, badges, JoinMeetingButton, etc.)
+  screens/                -- one folder per feature (feed, marketplace,
+                             business, profile, admin)
+  components/             -- shared UI
   navigation/             -- React Navigation tab + stack setup
-  api/, lib/              -- mirror of client API + socket
+  api/                    -- mirror of client API
   auth/                   -- AsyncStorage-backed token storage + AuthContext
 ```
 

@@ -21,9 +21,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import useStore from '../../store/useStore';
-import { directoryApi, bookingsApi } from '../../api/endpoints';
+import { directoryApi } from '../../api/endpoints';
 import { useApiResource } from '../../hooks/useApiResource';
-import { normaliseDirectoryItem, normaliseBooking } from '../../api/mappers';
+import { normaliseDirectoryItem } from '../../api/mappers';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -63,9 +63,7 @@ export default function AgentDashboard() {
     () => (currentUser?.id ? directoryApi.getAgent(currentUser.id) : null),
     [currentUser?.id]
   );
-  const { data: bookingsData } = useApiResource(() => bookingsApi.list(), []);
   const profile = profileData?.item ? normaliseDirectoryItem(profileData.item) : null;
-  const bookings = (bookingsData?.items || []).map(normaliseBooking);
   const p = profile;
 
   const stats = [

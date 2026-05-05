@@ -22,7 +22,6 @@ async function main() {
   await prisma.comment.deleteMany();
   await prisma.post.deleteMany();
   await prisma.lead.deleteMany();
-  await prisma.booking.deleteMany();
   await prisma.campaign.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.auditLog.deleteMany();
@@ -419,11 +418,12 @@ async function main() {
     await prisma.post.create({ data: p });
   }
 
-  // ---- Seed a lead and a booking ----
+  // ---- Seed sample enquiries ----
   await prisma.lead.create({
     data: {
       studentId: students[0].id,
-      universityId: unis[0].id,
+      targetId: unis[0].id,
+      targetRole: 'UNIVERSITY',
       programme: 'Masters of Data Science',
       message:
         'Hi, I\'m interested in your Masters of Data Science program for Feb 2027 intake. Can you share more info on prerequisites and scholarships?',
@@ -434,15 +434,13 @@ async function main() {
     data: { inquiries: { increment: 1 } },
   });
 
-  await prisma.booking.create({
+  await prisma.lead.create({
     data: {
       studentId: students[1].id,
-      providerId: consultants[0].id,
-      subject: 'Initial consultation — picking a business course',
-      scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      durationMinutes: 45,
-      mode: 'video',
-      status: 'CONFIRMED',
+      targetId: agents[0].id,
+      targetRole: 'AGENT',
+      message:
+        'Hi, I\'m looking for an agent to help me apply to business programs in Melbourne. Could you let me know your fees and process?',
     },
   });
 
