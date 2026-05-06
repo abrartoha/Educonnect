@@ -20,6 +20,7 @@ import {
   updateAgentSchema,
   updateConsultantSchema,
   updateStudentSchema,
+  compareQuery,
 } from './profile.schema.js';
 
 const router = Router();
@@ -27,7 +28,11 @@ const router = Router();
 // Universities
 router.get('/universities', validate({ query: listQuery }), asyncHandler(listUniversities));
 // Compare must be declared before the `/:id` route so it isn't captured.
-router.get('/universities/compare', asyncHandler(compareUniversities));
+router.get(
+  '/universities/compare',
+  validate({ query: compareQuery }),
+  asyncHandler(compareUniversities)
+);
 router.get(
   '/universities/:id',
   validate({ params: idParam }),
