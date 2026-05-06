@@ -94,7 +94,7 @@ const getByRole = (role, select, notFoundMsg) => async (req, res) => {
   if (role === 'UNIVERSITY') {
     prisma.universityProfile
       .update({ where: { userId: user.id }, data: { views: { increment: 1 } } })
-      .catch(() => { });
+      .catch(() => {});
   }
   res.json({ item: user });
 };
