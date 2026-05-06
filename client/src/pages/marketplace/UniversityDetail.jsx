@@ -640,8 +640,8 @@ export default function UniversityDetail() {
                 </div>
               </div>
 
-              {/* Enquire / Book Meeting */}
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              {/* Enquire + Explore */}
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
                 <button
                   onClick={() => setShowEnquiryModal(true)}
                   className="flex w-full items-center justify-center gap-2 gradient-primary rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-md shadow-primary-500/25 transition-all hover:shadow-lg hover:brightness-110"
@@ -649,6 +649,13 @@ export default function UniversityDetail() {
                   <Send size={16} />
                   Enquire Now
                 </button>
+                <Link
+                  to={`/universities/${id}/explore`}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-50"
+                >
+                  <MapPin size={16} />
+                  Explore campus in 3D
+                </Link>
               </div>
 
               {/* Tuition quick view */}

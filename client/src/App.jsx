@@ -44,6 +44,9 @@ const StudentProfile = lazy(() => import('./pages/student/StudentProfile'))
 // Shared dashboard
 const MyPosts = lazy(() => import('./pages/dashboard/MyPosts'))
 
+// 3D campus walker
+const ExploreCampus = lazy(() => import('./pages/explore/ExploreCampus'))
+
 // Marketplace
 const Universities = lazy(() => import('./pages/marketplace/Universities'))
 const Agents = lazy(() => import('./pages/marketplace/Agents'))
@@ -143,6 +146,12 @@ export default function App() {
         <Route path="/" element={<RequireAuth><Feed /></RequireAuth>} />
         <Route path="/feed" element={<Navigate to="/" replace />} />
         <Route path="/feed/:postId" element={<RequireAuth><PostDetail /></RequireAuth>} />
+
+        {/* 3D campus walker (full-screen, no dashboard chrome) */}
+        <Route
+          path="/universities/:id/explore"
+          element={<RequireAuth><ExploreCampus /></RequireAuth>}
+        />
 
         {/* Marketplace routes */}
         <Route path="/universities" element={<RequireAuth><Universities /></RequireAuth>} />
