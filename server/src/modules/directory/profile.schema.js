@@ -96,6 +96,7 @@ export const compareQuery = z.object({
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
+        .slice(0, 4)
     )
     .pipe(
       z
