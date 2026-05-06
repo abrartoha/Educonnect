@@ -87,3 +87,20 @@ export const listQuery = z.object({
   location: z.string().max(120).optional(),
   sort: z.enum(['rating', 'name', 'newest']).default('rating'),
 });
+
+export const compareQuery = z.object({
+  ids: z
+    .string()
+    .transform((value) =>
+      value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+    .pipe(
+      z
+        .array(z.string().cuid())
+        .min(2, 'Provide at least two IDs.')
+        .max(4)
+    ),
+});
