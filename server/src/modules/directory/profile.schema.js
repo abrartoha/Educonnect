@@ -96,12 +96,11 @@ export const compareQuery = z.object({
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
-        .slice(0, 4)
     )
     .pipe(
       z
         .array(z.string().cuid())
-        .min(2, 'Provide at least two IDs.')
-        .max(4)
+        .min(2, 'Select at least two universities to compare.')
+        .max(4, 'You can compare up to four universities at a time.')
     ),
 });
