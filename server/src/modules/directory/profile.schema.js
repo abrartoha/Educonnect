@@ -101,6 +101,6 @@ export const compareQuery = z.object({
       z
         .array(z.string().cuid())
         .min(2, 'Select at least two universities to compare.')
-        .max(4, 'You can compare up to four universities at a time.')
+        .max(3, 'You can compare up to three universities at a time.')
     ),
 });
