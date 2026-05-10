@@ -75,6 +75,8 @@ export const approveEntity = async (req, res) => {
 };
 
 export const suspendEntity = async (req, res) => {
+  if (req.params.id === req.user.id)
+    throw new BadRequestError('Cannot suspend your own account');
   const user = await prisma.user.findUnique({
     where: { id: req.params.id },
     select: { id: true },
@@ -120,6 +122,11 @@ export const setPostPin = async (req, res) => {
 
 export const setPostStatus = async (req, res) => {
   const { status } = req.body;
+  const existing = await prisma.post.findUnique({
+    where: { id: req.params.id },
+    select: { id: true },
+  });
+  if (!existing) throw new NotFoundError('Post not found');
   const post = await prisma.post.update({
     where: { id: req.params.id },
     data: { status },
