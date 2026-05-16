@@ -96,9 +96,14 @@ export const suspendEntity = async (req, res) => {
 export const reactivateEntity = async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.params.id },
-    select: { id: true },
+    select: { id: true, role: true },
   });
   if (!user) throw new NotFoundError('User not found');
+
+  const reactivatableRoles = ['UNIVERSITY', 'AGENT', 'CONSULTANT'];
+  if (!reactivatableRoles.includes(user.role))
+    throw new BadRequestError('This account type cannot be reactivated via this endpoint');
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: { status: 'ACTIVE' },

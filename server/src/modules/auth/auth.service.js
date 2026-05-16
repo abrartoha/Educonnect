@@ -68,8 +68,8 @@ const buildProfileData = (role, data) => {
         },
       };
     default:
-      return {};
-  }
+      throw new Error(`buildProfileData: unknown role "${role}"`);
+      }
 };
 
 export const registerUser = async (input) => {
@@ -104,7 +104,10 @@ export const authenticateUser = async (email, password) => {
   const ok = await verifyPassword(hash, password);
   if (!user || !ok) throw new UnauthorizedError('Invalid email or password');
   if (user.status === 'SUSPENDED') throw new ForbiddenError('Account suspended');
-  return user;
+  // ADD this
+  if (user.status === 'PENDING')   throw new ForbiddenError('Account pending admin approval');
+  if (user.status !== 'ACTIVE')    throw new ForbiddenError('Account not active');
+  return user;  
 };
 
 export const issueTokensForUser = async (user, { userAgent, ip } = {}) => {

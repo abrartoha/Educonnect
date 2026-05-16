@@ -21,7 +21,8 @@ export const buildApp = () => {
   const app = express();
 
   // Needed when behind a reverse proxy (nginx, ALB) so req.ip works.
-  if (env.TRUST_PROXY) app.set('trust proxy', 1);
+  // ADD — unconditional, 2 hops for Cloudflare → NGINX → Express
+  app.set('trust proxy', 2);
 
   // Disable the X-Powered-By header (helmet also does this).
   app.disable('x-powered-by');

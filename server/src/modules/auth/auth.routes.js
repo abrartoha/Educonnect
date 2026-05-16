@@ -3,6 +3,7 @@ import { authLimiter, signupLimiter } from '../../shared/middleware/rateLimits.j
 import { validate } from '../../shared/middleware/validate.js';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { csrfProtection } from '../../shared/middleware/csrf.js';
+import { requireAuth } from '../../shared/middleware/auth.js';
 import { signupSchema, loginSchema } from './auth.schema.js';
 import {
   signup,
@@ -42,6 +43,6 @@ router.post('/refresh', authLimiter, asyncHandler(refresh));
 
 router.post('/logout', csrfProtection, asyncHandler(logout));
 
-router.get('/me', asyncHandler(me));
+router.get('/me', requireAuth, asyncHandler(me));
 
 export default router;

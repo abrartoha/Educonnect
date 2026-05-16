@@ -12,9 +12,9 @@ import {
   refreshCookieOptions,
   clearAuthCookies,
 } from '../../shared/utils/cookies.js';
-import { UnauthorizedError } from '../../shared/utils/errors.js';
 import { prisma } from '../../db/prisma.js';
 import { generateCsrfToken } from '../../shared/middleware/csrf.js';
+import { UnauthorizedError, ForbiddenError } from '../../shared/utils/errors.js';
 
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
   res.cookie(ACCESS_COOKIE, accessToken, accessCookieOptions());
@@ -81,7 +81,6 @@ export const logout = async (req, res) => {
 };
 
 export const me = async (req, res) => {
-  if (!req.user) return res.json({ user: null });
   const full = await prisma.user.findUnique({
     where: { id: req.user.id },
     select: {
@@ -93,6 +92,7 @@ export const me = async (req, res) => {
       avatarUrl: true,
     },
   });
+  if (!full || full.status !== 'ACTIVE') throw new ForbiddenError();
   res.json({ user: full });
 };
 

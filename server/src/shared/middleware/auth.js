@@ -16,10 +16,11 @@ const loadUserFromToken = async (token) => {
       where: { id: payload.sub },
       select: { id: true, email: true, role: true, status: true, name: true },
     });
-    if (user && user.status !== 'SUSPENDED') return user;
+    // ADD
+  if (user && user.status === 'ACTIVE') return user;
   } catch {
-    // silent — invalid/expired token, proceed unauthenticated
-  }
+    req.log?.debug({ err }, 'token verification failed');
+  } 
   return null;
 };
 
