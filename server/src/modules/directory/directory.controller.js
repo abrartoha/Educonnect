@@ -40,11 +40,11 @@ const buildListArgs = (role, query) => {
     status: 'ACTIVE',
     ...(q
       ? {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { [profileKey]: { description: { contains: q, mode: 'insensitive' } } },
-          ],
-        }
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { [profileKey]: { description: { contains: q, mode: 'insensitive' } } },
+        ],
+      }
       : {}),
     ...(verified !== undefined
       ? { [profileKey]: { is: { verified } } }
@@ -58,8 +58,8 @@ const buildListArgs = (role, query) => {
     sort === 'name'
       ? { name: 'asc' }
       : sort === 'newest'
-      ? { createdAt: 'desc' }
-      : { [profileKey]: { rating: 'desc' } };
+        ? { createdAt: 'desc' }
+        : { [profileKey]: { rating: 'desc' } };
 
   return {
     where,
@@ -106,22 +106,7 @@ export const getUniversity = getByRole('UNIVERSITY', uniSelect, 'University not 
 // Accepts 2–4 IDs and returns them preserving caller order, skipping missing
 // or suspended entries.
 export const compareUniversities = async (req, res) => {
-  const idsParam = String(req.query.ids || '').trim();
-  if (!idsParam) {
-    return res.json({ items: [] });
-  }
-  const ids = idsParam
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 4);
-
-  if (ids.length < 2) {
-    return res.json({
-      items: [],
-      error: { code: 'NEEDS_TWO', message: 'Provide at least two IDs.' },
-    });
-  }
+  const ids = req.query.ids;
 
   const rows = await prisma.user.findMany({
     where: { id: { in: ids }, role: 'UNIVERSITY', status: 'ACTIVE' },
