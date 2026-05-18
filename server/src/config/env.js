@@ -35,6 +35,13 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().default('EduConnect <noreply@educonnect.com.au>'),
+
+
+  // Redis (session store). Optional in dev — when blank we skip connecting
+  REDIS_HOST: z.string().optional(),
+  REDIS_PORT: z.coerce.number().int().positive().optional(),
+  REDIS_USERNAME: z.string().optional(),
+  REDIS_PASSWORD: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);
