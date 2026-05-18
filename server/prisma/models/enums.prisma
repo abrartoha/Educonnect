@@ -1,0 +1,59 @@
+// ---------------------------------------------------------------------------
+//  Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  UNIVERSITY
+  AGENT
+  CONSULTANT
+  STUDENT
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum Tier {
+  FREE
+  PREMIUM
+  ENTERPRISE
+}
+
+enum PostStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
+enum PostCategory {
+  SCHOLARSHIPS
+  VISA_TIPS
+  COURSES
+  CAMPUS_LIFE
+  CAREER
+  STUDENT_LIFE
+  EVENTS
+}
+
+enum MediaType {
+  NONE
+  IMAGE
+  VIDEO
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  CLOSED
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
