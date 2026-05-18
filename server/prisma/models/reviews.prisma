@@ -1,0 +1,21 @@
+// ---------------------------------------------------------------------------
+//  Reviews (student → uni/agent/consultant)
+// ---------------------------------------------------------------------------
+
+model Review {
+  id         String   @id @default(cuid())
+  reviewerId String
+  targetId   String
+  targetRole Role     // UNIVERSITY / AGENT / CONSULTANT
+  rating     Int
+  title      String?
+  body       String
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  reviewer User @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  target   User @relation("TargetReviews",   fields: [targetId],   references: [id], onDelete: Cascade)
+
+  @@unique([reviewerId, targetId])
+  @@index([targetId, createdAt])
+}
