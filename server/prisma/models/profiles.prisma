@@ -1,0 +1,103 @@
+// ---------------------------------------------------------------------------
+//  Role profiles
+// ---------------------------------------------------------------------------
+
+model UniversityProfile {
+  userId           String   @id
+  shortName        String?
+  location         String?
+  type             String?  // "Public", "Private", "Group of Eight", etc.
+  description      String?
+  website          String?
+  phone            String?
+  logoUrl          String?
+  coverImageUrl    String?
+  foundedYear      Int?
+  studentCount     Int?
+  internationalPct Int?
+  ranking          Int?
+  rating           Float    @default(0)
+  reviewCount      Int      @default(0)
+  views            Int      @default(0)
+  inquiries        Int      @default(0)
+  tier             Tier     @default(FREE)
+  verified         Boolean  @default(false)
+  tuitionMin       Int?     // per-year tuition for international students (lower bound)
+  tuitionMax       Int?     // per-year tuition for international students (upper bound)
+  tuitionCurrency  String   @default("AUD")
+  courses          String[] @default([])
+  scholarships     String[] @default([])
+  intakes          String[] @default([])
+  facilities       String[] @default([])
+  accreditations   String[] @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model AgentProfile {
+  userId              String   @id
+  contactPerson       String?
+  phone               String?
+  location            String?
+  description         String?
+  website             String?
+  logoUrl             String?
+  yearsExperience     Int?
+  studentsPlaced      Int      @default(0)
+  partnerInstitutions Int      @default(0)
+  successRate         Float    @default(0)
+  rating              Float    @default(0)
+  reviewCount         Int      @default(0)
+  verified            Boolean  @default(false)
+  tier                Tier     @default(FREE)
+  certifications      String[] @default([])
+  services            String[] @default([])
+  languages           String[] @default([])
+  specialisations     String[] @default([])
+  maraNumber          String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model ConsultantProfile {
+  userId           String   @id
+  phone            String?
+  location         String?
+  description      String?
+  website          String?
+  yearsExperience  Int?
+  studentsAssisted Int      @default(0)
+  successRate      Float    @default(0)
+  rating           Float    @default(0)
+  reviewCount      Int      @default(0)
+  verified         Boolean  @default(false)
+  tier             Tier     @default(FREE)
+  qualifications   String[] @default([])
+  services         String[] @default([])
+  languages        String[] @default([])
+  specialisations  String[] @default([])
+  hourlyRate       Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([verified, rating])
+}
+
+model StudentProfile {
+  userId             String   @id
+  phone              String?
+  nationality        String?
+  currentEducation   String?
+  interestedIn       String[] @default([])
+  preferredLocations String[] @default([])
+  budgetMin          Int?
+  budgetMax          Int?
+  bio                String?
+  intakeTarget       String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
