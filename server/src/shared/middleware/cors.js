@@ -3,6 +3,11 @@ import { env } from '../../config/env.js';
 
 const allowedOrigins = [env.CLIENT_URL];
 
+// Allow localhost in development for testing
+if (env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5000');
+}
+
 export const corsMiddleware = cors({
   origin: (origin, cb) => {
     // Allow same-origin / server-to-server (no Origin header) and whitelist.
