@@ -40,6 +40,9 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
     "prisma": "^6.2.1"
   },
   "engines": {
