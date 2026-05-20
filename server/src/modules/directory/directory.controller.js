@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/utils/errors.js';
-import { sendOk, sendPaginated } from '../../shared/utils/sendResponse.js';
+import { sendOk, sendPaginated } from '../../shared/utils/responseHandler.js';
 
 // Common "safe to return publicly" selection for each role.
 const uniSelect = {
