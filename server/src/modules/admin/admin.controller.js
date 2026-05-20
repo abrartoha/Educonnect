@@ -51,10 +51,6 @@ export const approveEntity = async (req, res) => {
   });
   if (!user) throw new NotFoundError('User not found');
 
-  // The User model's relation fields are named `university`, `agent`,
-  // `consultant`, `student` — not `*Profile`. That's the name Prisma expects
-  // inside a nested `update`. The delegate name (tx.universityProfile...) is
-  // different; don't confuse the two.
   const profileRel = {
     UNIVERSITY: 'university',
     AGENT: 'agent',
@@ -75,6 +71,10 @@ export const approveEntity = async (req, res) => {
 };
 
 export const suspendEntity = async (req, res) => {
+  // FIX P2: self-suspension guard
+  if (req.params.id === req.user.id)
+    throw new BadRequestError('Cannot suspend your own account');
+
   const user = await prisma.user.findUnique({
     where: { id: req.params.id },
     select: { id: true },
@@ -86,7 +86,6 @@ export const suspendEntity = async (req, res) => {
     data: { status: 'SUSPENDED' },
     select: userSelect,
   });
-  // Kick them out immediately by revoking refresh tokens.
   await revokeAllForUser(user.id);
   res.json({ item: updated });
 };
@@ -94,9 +93,15 @@ export const suspendEntity = async (req, res) => {
 export const reactivateEntity = async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.params.id },
-    select: { id: true },
+    select: { id: true, role: true }, // FIX P1: added role to select
   });
   if (!user) throw new NotFoundError('User not found');
+
+  // FIX P1: role guard — mirrors approveEntity pattern
+  const reactivatableRoles = ['UNIVERSITY', 'AGENT', 'CONSULTANT'];
+  if (!reactivatableRoles.includes(user.role))
+    throw new BadRequestError('This account type cannot be reactivated via this endpoint');
+
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: { status: 'ACTIVE' },
@@ -120,6 +125,12 @@ export const setPostPin = async (req, res) => {
 
 export const setPostStatus = async (req, res) => {
   const { status } = req.body;
+  // FIX P2: added findUnique check before update
+  const existing = await prisma.post.findUnique({
+    where: { id: req.params.id },
+    select: { id: true },
+  });
+  if (!existing) throw new NotFoundError('Post not found');
   const post = await prisma.post.update({
     where: { id: req.params.id },
     data: { status },
