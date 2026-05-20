@@ -61,13 +61,33 @@ router.get('/csrf', asyncHandler(csrfToken));
  *               - $ref: '#/components/schemas/AgentSignup'
  *               - $ref: '#/components/schemas/ConsultantSignup'
  *               - $ref: '#/components/schemas/StudentSignup'
- *           example:
- *             email: "student@example.com"
- *             password: "Password123"
- *             name: "John Doe"
- *             role: "STUDENT"
- *             phone: "+1234567890"
- *             nationality: "Australia"
+ *           examples:
+ *             StudentSignup:
+ *               summary: Student account signup
+ *               value:
+ *                 email: "student@example.com"
+ *                 password: "Password123"
+ *                 name: "John Doe"
+ *                 role: "STUDENT"
+ *                 phone: "+1234567890"
+ *                 nationality: "Australia"
+ *                 currentEducation: "High School"
+ *                 interestedIn: ["Engineering", "Business"]
+ *                 preferredLocations: ["Sydney", "Melbourne"]
+ *                 budgetMin: 20000
+ *                 budgetMax: 50000
+ *             ConsultantSignup:
+ *               summary: Consultant account signup
+ *               value:
+ *                 email: "consultant@example.com"
+ *                 password: "Password123"
+ *                 name: "Jane Smith"
+ *                 role: "CONSULTANT"
+ *                 phone: "+1987654321"
+ *                 location: "Sydney, Australia"
+ *                 description: "Education consultant with 10 years of experience in university admissions."
+ *                 yearsExperience: 10
+ *                 hourlyRate: 150
  *     responses:
  *       201:
  *         description: User created successfully
