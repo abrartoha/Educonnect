@@ -1,5 +1,6 @@
 import { prisma } from '../../db/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/utils/errors.js';
+import { sendOk, sendPaginated } from '../../shared/utils/sendResponse.js';
 
 // Common "safe to return publicly" selection for each role.
 const uniSelect = {
@@ -75,8 +76,7 @@ const listByRole = (role, select) => async (req, res) => {
     prisma.user.findMany({ ...args, select }),
     prisma.user.count({ where: args.where }),
   ]);
-  res.json({
-    items,
+  sendPaginated(res, items, {
     page: req.query.page,
     limit: req.query.limit,
     total,
@@ -94,9 +94,9 @@ const getByRole = (role, select, notFoundMsg) => async (req, res) => {
   if (role === 'UNIVERSITY') {
     prisma.universityProfile
       .update({ where: { userId: user.id }, data: { views: { increment: 1 } } })
-      .catch(() => {});
+      .catch(() => { });
   }
-  res.json({ item: user });
+  sendOk(res, user);
 };
 
 export const listUniversities = listByRole('UNIVERSITY', uniSelect);
@@ -117,7 +117,7 @@ export const compareUniversities = async (req, res) => {
   const byId = new Map(rows.map((r) => [r.id, r]));
   const items = ids.map((id) => byId.get(id)).filter(Boolean);
 
-  res.json({ items });
+  sendOk(res, items);
 };
 
 export const listAgents = listByRole('AGENT', agentSelect);
@@ -158,5 +158,5 @@ export const updateOwnProfile = async (req, res) => {
     include: { [profileRel]: true },
   });
 
-  res.json({ user: updated });
+  sendOk(res, updated);
 };
