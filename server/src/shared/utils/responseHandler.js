@@ -1,36 +1,15 @@
-import { HttpStatus } from './httpStatus.js';
-
-/**
- * Standardized API response format:
- * {
- *   success: boolean,
- *   data: any,
- *   message?: string,
- *   meta?: { pagination, etc }
- * }
- */
-
-export const sendResponse = (res, { statusCode = HttpStatus.OK, data = null, message, meta } = {}) => {
-  const response = { success: statusCode < 400 };
-
-  if (data !== null) response.data = data;
-  if (message) response.message = message;
-  if (meta) response.meta = meta;
-
-  res.status(statusCode).json(response);
+export const HttpStatus = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  RATE_LIMITED: 429,
+  INTERNAL: 500,
 };
-
-export const sendCreated = (res, data, message = 'Created successfully', meta) =>
-  sendResponse(res, { statusCode: HttpStatus.CREATED, data, message, meta });
-
-export const sendOk = (res, data, message, meta) =>
-  sendResponse(res, { statusCode: HttpStatus.OK, data, message, meta });
-
-export const sendNoContent = (res) =>
-  res.status(HttpStatus.NO_CONTENT).send();
-
-export const sendPaginated = (res, data, pagination, message, meta = {}) =>
-  sendResponse(res, { statusCode: HttpStatus.OK, data, message, meta: { ...meta, pagination } });
 
 /**
  * Response handler utility for standardized API responses
