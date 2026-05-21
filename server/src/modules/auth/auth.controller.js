@@ -15,6 +15,9 @@ import {
 import { UnauthorizedError } from '../../shared/utils/errors.js';
 import { prisma } from '../../db/prisma.js';
 import { generateCsrfToken } from '../../shared/middleware/csrf.js';
+import { env } from '../../config/env.js';
+import crypto from 'crypto';
+import redisClient from '../../db/redis.js';
 
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
   res.cookie(ACCESS_COOKIE, accessToken, accessCookieOptions());
@@ -106,3 +109,21 @@ export const csrfToken = (req, res) => {
   });
   res.json({ csrfToken: token });
 };
+
+export async function getFormToken(req, res) {
+  const timestamp = Date.now()
+  const secret    = env.FORM_TOKEN_SECRET || 'default_secret_change_me_in_prod'
+  const hmac      = crypto
+    .createHmac('sha256', secret)
+    .update(String(timestamp))
+    .digest('hex')
+
+  const token = `${timestamp}.${hmac}`
+
+  // Store token in Redis, expires in 15 min (900 seconds)
+  await redisClient.set(`formtoken:${token}`, '1', {
+    EX: 900
+  });
+
+  res.json({ token })
+}

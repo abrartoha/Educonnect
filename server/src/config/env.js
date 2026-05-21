@@ -41,7 +41,8 @@ const envSchema = z.object({
   REDIS_HOST: z.string().optional(),
   REDIS_PORT: z.coerce.number().int().positive().optional(),
   REDIS_USERNAME: z.string().optional(),
-  REDIS_PASSWORD: z.string().optional()
+  REDIS_PASSWORD: z.string().optional(),
+  FORM_TOKEN_SECRET: z.string().min(32).default('default_secret_change_me_in_prod'),
 });
 
 const parsed = envSchema.safeParse(process.env);
