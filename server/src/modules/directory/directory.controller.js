@@ -6,7 +6,6 @@ import { responseHandler } from '../../shared/utils/responseHandler.js';
 const uniSelect = {
   id: true,
   name: true,
-  email: true,
   avatarUrl: true,
   createdAt: true,
   university: true,
@@ -14,7 +13,6 @@ const uniSelect = {
 const agentSelect = {
   id: true,
   name: true,
-  email: true,
   avatarUrl: true,
   createdAt: true,
   agent: true,
@@ -22,7 +20,6 @@ const agentSelect = {
 const consultantSelect = {
   id: true,
   name: true,
-  email: true,
   avatarUrl: true,
   createdAt: true,
   consultant: true,
@@ -43,7 +40,7 @@ const buildListArgs = (role, query) => {
       ? {
         OR: [
           { name: { contains: q, mode: 'insensitive' } },
-          { [profileKey]: { description: { contains: q, mode: 'insensitive' } } },
+          { [profileKey]: { is: { description: { contains: q, mode: 'insensitive' } } } },
         ],
       }
       : {}),
@@ -103,7 +100,7 @@ export const listUniversities = listByRole('UNIVERSITY', uniSelect);
 export const getUniversity = getByRole('UNIVERSITY', uniSelect, 'University not found');
 
 // Batch lookup used by the "compare universities" feature on web + mobile.
-// Accepts 2–4 IDs and returns them preserving caller order, skipping missing
+// Accepts 2–3 IDs and returns them preserving caller order, skipping missing
 // or suspended entries.
 export const compareUniversities = async (req, res) => {
   const ids = req.query.ids;
