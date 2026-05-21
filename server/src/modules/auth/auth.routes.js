@@ -11,7 +11,9 @@ import {
   logout,
   me,
   csrfToken,
+  getFormToken,
 } from './auth.controller.js';
+// import { timeCheck } from '../../shared/middleware/timeCheck.js';
 
 const router = Router();
 
@@ -319,5 +321,12 @@ router.post('/logout', csrfProtection, asyncHandler(logout));
  *               user: null
  */
 router.get('/me', asyncHandler(me));
+
+router.get('/form-token', asyncHandler(getFormToken));
+
+// Time check route for testing. Not for production use.
+// router.post('/time-check', timeCheck, (req, res) => {
+//   res.json({ message: 'Form submission accepted' });
+// });
 
 export default router;
