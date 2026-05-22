@@ -19,6 +19,13 @@ const router = Router();
 
 /**
  * @openapi
+ * tags:
+ *   name: Auth
+ *   description: Authentication, session management, and CSRF tokens
+ */
+
+/**
+ * @openapi
  * /auth/csrf:
  *   get:
  *     summary: Get CSRF token
