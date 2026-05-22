@@ -85,7 +85,7 @@ export const sharedParameters = {
       maxLength: 200,
     },
     description: 'Search/filter query string',
-    example: 'computer science',
+    example: 'top-ranked',
   },
   SortParam: {
     name: 'sort',

@@ -19,6 +19,10 @@ const mergedSchemas = {
 
 const swaggerDefinition = {
   openapi: '3.1.0',
+  tags: [
+    { name: 'Auth', description: 'Authentication, session management, and CSRF tokens' },
+    { name: 'Directory', description: 'Directory browsing and profile management' },
+  ],
   info: {
     title: 'EduConnect API',
     version: '1.0.0',
@@ -77,7 +81,10 @@ Response includes pagination metadata: \`page\`, \`limit\`, \`total\`, \`pages\`
         type: 'apiKey',
         in: 'cookie',
         name: 'em_access',
-        description: 'HTTP-only cookie for web clients',
+        description:
+          'HTTP-only signed cookie set automatically by the server on login (web clients). ' +
+          'Cannot be used from Swagger UI — the server requires a cryptographically signed cookie ' +
+          '(req.signedCookies), which Swagger UI cannot generate. For testing, use bearerAuth or log in via the /auth/login endpoint to automatically set the em_access cookie in the browser.',
       },
       csrfToken: {
         type: 'apiKey',
