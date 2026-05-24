@@ -13,6 +13,7 @@ import {
   csrfToken,
   getFormToken,
 } from './auth.controller.js';
+import { emailValidator } from '../../shared/middleware/emailValidator.js';
 // import { timeCheck } from '../../shared/middleware/timeCheck.js';
 
 const router = Router();
@@ -335,5 +336,9 @@ router.get('/form-token', asyncHandler(getFormToken));
 // router.post('/time-check', timeCheck, (req, res) => {
 //   res.json({ message: 'Form submission accepted' });
 // });
+
+router.post('/check-email', emailValidator, (req, res) => {
+  res.json({ message: 'Email is valid and can receive emails' });
+});
 
 export default router;
