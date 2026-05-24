@@ -2,7 +2,13 @@ import crypto from 'crypto';
 import { env } from '../../config/env.js';
 import redisClient from '../../db/redis.js';
 
-// timeCheck — check Redis and delete after use
+/**
+ * Form submission time check middleware - validates form token and submission timing. To use this middleware, ensure the formToken is included in the request body. To get form-token use the /api/form-token endpoint which generates a token and stores it in Redis with a short TTL.
+ * @param {import('express').Request} req - Express request object with formToken in body
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 export async function timeCheck(req, res, next) {
   const { formToken } = req.body;
   const secret = env.FORM_TOKEN_SECRET;

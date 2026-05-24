@@ -2,6 +2,13 @@ import validator from 'validator'
 import disposableDomains from 'disposable-email-domains' with { type: 'json' }
 import dns from 'dns/promises'
 
+/**
+ * Validates email format, checks for disposable domains, and verifies MX records
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 export async function emailValidator(req, res, next) {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase().trim();

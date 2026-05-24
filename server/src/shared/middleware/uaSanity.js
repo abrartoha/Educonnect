@@ -1,3 +1,10 @@
+/**
+ * User-Agent sanity check middleware to block known bot patterns except legitimate browsers.
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware function
+ * @returns {void}
+ */
 export function uaSanity(req, res, next) {
   const ua = req.headers['user-agent']
 
