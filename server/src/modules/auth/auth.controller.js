@@ -5,6 +5,8 @@ import {
   rotateRefreshToken,
   revokeRefreshToken,
   changeUserPassword,
+  generatePasswordResetToken,
+  resetPasswordWithToken,
 } from './auth.service.js';
 import {
   ACCESS_COOKIE,
@@ -142,4 +144,50 @@ export async function changePassword(req, res) {
   });
   if(email) res.json({ ok: true });
   else throw new Error('Password changed but failed to send notification email');
+}
+
+export async function forgotPassword(req, res) {
+  const { email } = req.body;
+  
+  // Generate reset token (also validates email exists)
+  const token = await generatePasswordResetToken(email);
+  
+  // Create reset link
+  const resetUrl = `${env.CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+  
+  // Send password reset email
+  const result = await sendEmail({
+    to: email,
+    subject: 'Password Reset Request',
+    templateName: 'passwordResetEmail',
+    templateData: { 
+      resetUrl,
+      expiryMinutes: 3,
+      name: email.split('@')[0],
+    },
+  });
+
+  if (result) {
+    res.json({ 
+      ok: true, 
+      message: 'Password reset link has been sent to your email. It will expire in 2 minutes.' 
+    });
+  } else {
+    throw new Error('Failed to send password reset email');
+    // Note: We don't want to reveal whether the email exists or not, so we return success even if sending fails.
+    // Refactore: In a real implementation, Silently reject and log this failure for internal monitoring but not expose it to the user.
+  }
+}
+
+export async function resetPassword(req, res) {
+  const { token, email, newPassword } = req.body;
+
+  // Reset password using token
+  const user = await resetPasswordWithToken(token, email, newPassword);
+
+  res.json({ 
+    ok: true, 
+    message: 'Password has been reset successfully. You can now login with your new password.',
+    user
+  });
 }

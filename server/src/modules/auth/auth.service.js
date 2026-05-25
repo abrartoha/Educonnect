@@ -11,6 +11,8 @@ import {
   ConflictError,
   ForbiddenError,
 } from '../../shared/utils/errors.js';
+import crypto from 'crypto';
+import redisClient from '../../db/redis.js';
 
 // Shape the profile payload for each role.
 const buildProfileData = (role, data) => {
@@ -206,6 +208,77 @@ export const changeUserPassword = async (user, currentPassword, newPassword) => 
     where: { id: user.id, email: userData.email },
     data: { passwordHash: newHash },
   });
-  if(res) await revokeAllForUser(user.id); // Invalidate all existing sessions after password change.
+  if (res) await revokeAllForUser(user.id); // Invalidate all existing sessions after password change.
   return res;
+};
+
+/**
+ * Generate a password reset token and store it in Redis.
+ * Token expires in 3 minutes.
+ * @param {string} email - The email of the user requesting password reset
+ * @returns {Promise<string>} The reset token
+ */
+export const generatePasswordResetToken = async (email) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new UnauthorizedError('User not found');
+  // Note: We don't want to reveal whether the user exists or not, so we return success even if sending fails.
+  // Refactore: In a real implementation, Silently reject and log this failure for internal monitoring but not expose it to the user.
+
+  // Generate a secure random token
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // Store token in Redis with 3 minute expiry (180 seconds)
+  await redisClient.set(`password_reset:${tokenHash}`, email, {
+    EX: 180,
+  });
+
+  return token;
+};
+
+/**
+ * Reset user password using a reset token.
+ * @param {string} token - The reset token from the email link
+ * @param {string} email - The user's email address
+ * @param {string} newPassword - The new password
+ * @returns {Promise<Object>} The updated user object
+ */
+export const resetPasswordWithToken = async (token, email, newPassword) => {
+  // Hash the token to match what's stored in Redis
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  // Verify token exists in Redis and matches email
+  const storedEmail = await redisClient.get(`password_reset:${tokenHash}`);
+  if (!storedEmail) {
+    throw new UnauthorizedError('Invalid or expired reset token');
+  }
+
+  if (storedEmail !== email) {
+    throw new UnauthorizedError('Email does not match the reset token');
+  }
+
+  // Get the user
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new UnauthorizedError('User not found');
+
+  // Note: We don't want to reveal whether all the conditions are met or not, so we return success even if sending fails.
+  // Refactore: In a real implementation, Silently reject and log this failure for internal monitoring but not expose it to the user.
+
+  // Hash new password
+  const newHash = await hashPassword(newPassword);
+
+  // Update password
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: newHash },
+    select: { id: true, email: true, name: true, role: true, status: true },
+  });
+
+  // Invalidate all existing sessions after password reset
+  await revokeAllForUser(user.id);
+
+  // Delete the token from Redis
+  await redisClient.del(`password_reset:${tokenHash}`);
+
+  return updatedUser;
 };

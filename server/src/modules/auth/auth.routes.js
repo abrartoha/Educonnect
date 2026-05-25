@@ -3,7 +3,7 @@ import { authLimiter, signupLimiter } from '../../shared/middleware/rateLimits.j
 import { validate } from '../../shared/middleware/validate.js';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { csrfProtection } from '../../shared/middleware/csrf.js';
-import { signupSchema, loginSchema, changePasswordSchema } from './auth.schema.js';
+import { signupSchema, loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import {
   signup,
   login,
@@ -13,6 +13,8 @@ import {
   csrfToken,
   getFormToken,
   changePassword,
+  forgotPassword,
+  resetPassword,
 } from './auth.controller.js';
 import { emailValidator } from '../../shared/middleware/emailValidator.js';
 import { requireAuth } from '../../shared/middleware/auth.js';
@@ -401,6 +403,134 @@ router.post(
   csrfProtection,
   validate({ body: changePasswordSchema }),
   asyncHandler(changePassword)
+);
+
+/**
+ * @openapi
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     description: |
+ *       Request a password reset token to be sent to the user's email.
+ *       The token is valid for 2 minutes and can be used with the /reset-password endpoint.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *           example:
+ *             email: "student@example.com"
+ *     responses:
+ *       200:
+ *         description: Password reset email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *             example:
+ *               ok: true
+ *               message: "Password reset link has been sent to your email. It will expire in 2 minutes."
+ *       400:
+ *         description: Invalid email format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  '/forgot-password',
+  // signupLimiter,
+  validate({ body: forgotPasswordSchema }),
+  asyncHandler(forgotPassword)
+);
+
+/**
+ * @openapi
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     description: |
+ *       Reset the user's password using a valid reset token.
+ *       The token must be obtained from the /forgot-password endpoint and is valid for 2 minutes.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Password reset token from email
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               newPassword:
+ *                 type: string
+ *                 description: New password (min 8 chars, must contain uppercase, lowercase, digit)
+ *           example:
+ *             token: "abc123def456..."
+ *             email: "student@example.com"
+ *             newPassword: "NewPassword456"
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/UserResponse'
+ *             example:
+ *               ok: true
+ *               message: "Password has been reset successfully. You can now login with your new password."
+ *               user:
+ *                 id: "uuid-123"
+ *                 email: "student@example.com"
+ *                 name: "John Doe"
+ *                 role: "STUDENT"
+ *                 status: "ACTIVE"
+ *       400:
+ *         description: Invalid input or weak password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Invalid or expired reset token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  '/reset-password',
+  // signupLimiter,
+  validate({ body: resetPasswordSchema }),
+  asyncHandler(resetPassword)
 );
 
 export default router;
