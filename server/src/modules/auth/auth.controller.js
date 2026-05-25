@@ -4,6 +4,7 @@ import {
   issueTokensForUser,
   rotateRefreshToken,
   revokeRefreshToken,
+  changeUserPassword,
 } from './auth.service.js';
 import {
   ACCESS_COOKIE,
@@ -18,6 +19,7 @@ import { generateCsrfToken } from '../../shared/middleware/csrf.js';
 import { env } from '../../config/env.js';
 import crypto from 'crypto';
 import redisClient from '../../db/redis.js';
+import { sendEmail } from '../../shared/services/sendEmail.js';
 
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
   res.cookie(ACCESS_COOKIE, accessToken, accessCookieOptions());
@@ -126,4 +128,18 @@ export async function getFormToken(req, res) {
   });
 
   res.json({ token })
+}
+
+export async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body;
+  const result = await changeUserPassword(req.user, currentPassword, newPassword);
+  if(!result) throw new Error('Password change failed');
+  const email = await sendEmail({
+    to: req.user.email,
+    subject: 'Password Changed',
+    templateName: 'changePasswordEmail',
+    templateData: { name: req.user.name, changedAt: new Date().toLocaleString() },
+  });
+  if(email) res.json({ ok: true });
+  else throw new Error('Password changed but failed to send notification email');
 }

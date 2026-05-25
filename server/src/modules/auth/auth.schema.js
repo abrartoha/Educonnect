@@ -59,3 +59,8 @@ export const loginSchema = z.object({
   email: z.string().email().max(254).toLowerCase().trim(),
   password: z.string().min(1).max(128),
 });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: strongPassword,
+});

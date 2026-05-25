@@ -3,7 +3,7 @@ import { authLimiter, signupLimiter } from '../../shared/middleware/rateLimits.j
 import { validate } from '../../shared/middleware/validate.js';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { csrfProtection } from '../../shared/middleware/csrf.js';
-import { signupSchema, loginSchema } from './auth.schema.js';
+import { signupSchema, loginSchema, changePasswordSchema } from './auth.schema.js';
 import {
   signup,
   login,
@@ -12,8 +12,10 @@ import {
   me,
   csrfToken,
   getFormToken,
+  changePassword,
 } from './auth.controller.js';
 import { emailValidator } from '../../shared/middleware/emailValidator.js';
+import { requireAuth } from '../../shared/middleware/auth.js';
 // import { timeCheck } from '../../shared/middleware/timeCheck.js';
 
 const router = Router();
@@ -340,5 +342,65 @@ router.get('/form-token', asyncHandler(getFormToken));
 router.post('/check-email', emailValidator, (req, res) => {
   res.json({ message: 'Email is valid and can receive emails' });
 });
+
+/**
+ * @openapi
+ * /auth/change-password:
+ *   post:
+ *     summary: Change user password
+ *     description: |
+ *       Change the password for the currently authenticated user.
+ *       Requires the current password for verification and the new password.
+ *       **Web clients**: Requires X-CSRF-Token header in addition to auth cookie.
+ *       **Mobile clients**: Use Bearer token, no CSRF needed.
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *       - csrfToken: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ChangePasswordRequest'
+ *           example:
+ *             currentPassword: "OldPassword123"
+ *             newPassword: "NewPassword456"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/OkResponse'
+ *             example:
+ *               ok: true
+ *       400:
+ *         description: Invalid current password or weak new password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: CSRF token invalid or missing
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  '/change-password',
+  requireAuth,
+  csrfProtection,
+  validate({ body: changePasswordSchema }),
+  asyncHandler(changePassword)
+);
 
 export default router;

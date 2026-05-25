@@ -178,7 +178,7 @@ export const revokeRefreshToken = async (presentedToken) => {
       where: { tokenHash: hashRefreshToken(presentedToken), revokedAt: null },
       data: { revokedAt: new Date() },
     })
-    .catch(() => {});
+    .catch(() => { });
 };
 
 export const revokeAllForUser = async (userId) => {
@@ -186,4 +186,26 @@ export const revokeAllForUser = async (userId) => {
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+};
+
+/**
+ * Change a user's password.
+ * @param {string} userId - The ID of the user whose password to change.
+ * @param {string} currentPassword - The user's current password.
+ * @param {string} newPassword - The new password.
+ * @returns {Promise<void>}
+ */
+export const changeUserPassword = async (user, currentPassword, newPassword) => {
+  const userData = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, email: true } });
+  if (!user || !userData) throw new UnauthorizedError('User not found');
+  const isOkCurrentPass = await verifyPassword(userData.passwordHash, currentPassword);
+  if (!isOkCurrentPass) throw new UnauthorizedError('Current password is incorrect');
+  const newHash = await hashPassword(newPassword);
+
+  const res = await prisma.user.update({
+    where: { id: user.id, email: userData.email },
+    data: { passwordHash: newHash },
+  });
+  if(res) await revokeAllForUser(user.id); // Invalidate all existing sessions after password change.
+  return res;
 };
