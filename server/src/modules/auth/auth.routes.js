@@ -492,7 +492,7 @@ router.post(
  *             newPassword: "NewPassword456"
  *     responses:
  *       200:
- *         description: Password reset successfully
+ *         description: Password reset successfully. In case of production, user data is not returned for security reasons.
  *         content:
  *           application/json:
  *             schema:
@@ -502,12 +502,13 @@ router.post(
  *                   type: boolean
  *                 message:
  *                   type: string
- *                 user:
- *                   $ref: '#/components/schemas/UserResponse'
+ *                 data:
+ *                   type: object
+ *                   nullable: true
  *             example:
  *               ok: true
  *               message: "Password has been reset successfully. You can now login with your new password."
- *               user:
+ *               data:
  *                 id: "uuid-123"
  *                 email: "student@example.com"
  *                 name: "John Doe"

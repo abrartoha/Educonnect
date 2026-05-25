@@ -18,7 +18,7 @@ import {
 import { UnauthorizedError } from '../../shared/utils/errors.js';
 import { prisma } from '../../db/prisma.js';
 import { generateCsrfToken } from '../../shared/middleware/csrf.js';
-import { env } from '../../config/env.js';
+import { env, isProd } from '../../config/env.js';
 import crypto from 'crypto';
 import redisClient from '../../db/redis.js';
 import { sendEmail } from '../../shared/services/sendEmail.js';
@@ -188,6 +188,6 @@ export async function resetPassword(req, res) {
   res.json({ 
     ok: true, 
     message: 'Password has been reset successfully. You can now login with your new password.',
-    user
+    data: isProd ? null : user
   });
 }
