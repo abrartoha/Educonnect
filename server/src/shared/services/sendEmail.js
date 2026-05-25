@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { env } from "../../config/env.js";
+import { logger } from "../../config/logger.js";
 
 // import { BadRequestError } from "../utils/errors";
 
@@ -39,7 +40,7 @@ const transporter = nodemailer.createTransport({
  * Send email using EJS template
  *
  * @param {SendEmailOptions} options - Email configuration options
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} Returns true if email was sent successfully, otherwise false
  * @throws {AppError} Throws error if email sending fails
  */
 
@@ -60,8 +61,33 @@ export const sendEmail = async ({ to, subject, templateName, templateData, attac
       })),
     });
 
-    console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
+    // Example info object from nodemailer:{
+    //   accepted: [ 'student@example.com' ],
+    //   rejected: [],
+    //   ehlo: [
+    //     'SIZE 35882577',
+    //     '8BITMIME',
+    //     'AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH',
+    //     'ENHANCEDSTATUSCODES',
+    //     'PIPELINING',
+    //     'CHUNKING',
+    //     'SMTPUTF8'
+    //   ],
+    //   envelopeTime: 992,
+    //   messageTime: 694,
+    //   messageSize: 1728,
+    //   response: '250 2.0.0 OK  1779695986 d2e1a72fcca58-84164ea09a9sm9973190b3a.31 - gsmtp',
+    //   envelope: { from: 'ami.faisal2018@gmail.com', to: [ 'student@example.com' ] },
+    //   messageId: '<0a0c3fa1-0296-fdc7-d862-4d3380039965@gmail.com>'
+    // }
+    if (info.accepted.length > 0 && info.rejected.length === 0) {
+      return true; // Email sent successfully
+    }
+    // Logger isn't working here.
+    logger.info(`✉️ Email sent to ${to}: ${info.messageId}`);
   } catch (error) {
-    console.log("email sending error", error.message);
+    // Logger isn't working here.
+    logger.error("email sending error", error.message);
+    return false; // Email failed to send
   }
 };
