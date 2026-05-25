@@ -146,4 +146,40 @@ export const authSchemas = {
       csrfToken: { type: 'string' },
     },
   },
+  ChangePasswordRequest: {
+    type: 'object',
+    required: ['currentPassword', 'newPassword'],
+    properties: {
+      currentPassword: { type: 'string', minLength: 1, maxLength: 128 },
+      newPassword: {
+        type: 'string',
+        minLength: 8,
+        maxLength: 128,
+        description: 'Must contain uppercase, lowercase, and digit',
+      },
+    },
+  },
+  OkResponse: {
+    type: 'object',
+    properties: {
+      ok: { type: 'boolean', example: true },
+    },
+  },
+  ErrorResponse: {
+    type: 'object',
+    properties: {
+      message: { type: 'string' },
+      code: { type: 'string' },
+      errors: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            field: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
 };
