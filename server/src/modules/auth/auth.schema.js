@@ -64,3 +64,13 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(128),
   newPassword: strongPassword,
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email().max(254).toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  email: z.string().email().max(254).toLowerCase().trim(),
+  newPassword: strongPassword,
+});
