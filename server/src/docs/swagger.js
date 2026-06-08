@@ -106,7 +106,7 @@ Response includes pagination metadata: \`page\`, \`limit\`, \`total\`, \`pages\`
 
 const options = {
   swaggerDefinition,
-  apis: ['./src/modules/**/*.routes.js'],
+  apis: ['./src/modules/**/*.routes.js', './src/modules/**/*.openapi.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
