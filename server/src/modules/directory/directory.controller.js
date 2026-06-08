@@ -1,3 +1,4 @@
+import { logger } from '../../config/logger.js';
 import { prisma } from '../../db/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/utils/errors.js';
 import { responseHandler } from '../../shared/utils/responseHandler.js';
@@ -91,7 +92,7 @@ const getByRole = (role, select, notFoundMsg) => async (req, res) => {
   if (role === 'UNIVERSITY') {
     prisma.universityProfile
       .update({ where: { userId: user.id }, data: { views: { increment: 1 } } })
-      .catch(() => { });
+      .catch((err) => logger.error({ err }, 'Failed to increment university views'));
   }
   responseHandler.ok(res, user);
 };

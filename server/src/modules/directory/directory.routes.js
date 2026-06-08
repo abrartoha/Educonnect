@@ -3,7 +3,12 @@ import { validate } from '../../shared/middleware/validate.js';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { requireAuth, requireRole } from '../../shared/middleware/auth.js';
 import { csrfProtection } from '../../shared/middleware/csrf.js';
-import { rateLimiter } from '../../shared/middleware/ratelimiter/limiterFactory.js';
+import {
+  directoryListLimiter,
+  directoryReadLimiter,
+  directoryCompareLimiter,
+  directoryWriteLimiter,
+} from '../../shared/middleware/ratelimiter/presets.js';
 import {
   listUniversities,
   getUniversity,
@@ -25,11 +30,6 @@ import {
 } from './profile.schema.js';
 
 const router = Router();
-
-const compareLimiter = rateLimiter({ window: 60, limit: 5, scope: 'user', routeSpecificLimit: true, blockDuration: 300 });
-const listLimiter = rateLimiter({ window: 60, limit: 10, scope: 'user', routeSpecificLimit: true, blockDuration: 300 });
-const idLimiter = rateLimiter({ window: 60, limit: 20, scope: 'user', routeSpecificLimit: true, blockDuration: 300 });
-const writeLimiter = rateLimiter({ window: 3600, limit: 5, scope: 'user', blockDuration: 3600 });
 
 /**
  * @openapi
@@ -81,7 +81,7 @@ const writeLimiter = rateLimiter({ window: 3600, limit: 5, scope: 'user', blockD
  *                     pages: { type: 'integer' }
  */
 // Universities
-router.get('/universities', requireAuth, listLimiter, validate({ query: listQuery }), asyncHandler(listUniversities));
+router.get('/universities', requireAuth, directoryListLimiter, validate({ query: listQuery }), asyncHandler(listUniversities));
 /**
  * @openapi
  * /universities/compare:
@@ -113,7 +113,7 @@ router.get('/universities', requireAuth, listLimiter, validate({ query: listQuer
 router.get(
   '/universities/compare',
   requireAuth,
-  compareLimiter,
+  directoryCompareLimiter,
   validate({ query: compareQuery }),
   asyncHandler(compareUniversities)
 );
@@ -152,7 +152,7 @@ router.get(
 router.get(
   '/universities/:id',
   requireAuth,
-  idLimiter,
+  directoryReadLimiter,
   validate({ params: idParam }),
   asyncHandler(getUniversity)
 );
@@ -190,7 +190,7 @@ router.patch(
   requireRole('UNIVERSITY'),
   csrfProtection,
   validate({ body: updateUniversitySchema }),
-  writeLimiter,
+  directoryWriteLimiter,
   asyncHandler(updateOwnProfile)
 );
 
@@ -237,7 +237,7 @@ router.patch(
  *                     pages: { type: 'integer' }
  */
 // Agents
-router.get('/agents', requireAuth, listLimiter, validate({ query: listQuery }), asyncHandler(listAgents));
+router.get('/agents', requireAuth, directoryListLimiter, validate({ query: listQuery }), asyncHandler(listAgents));
 /**
  * @openapi
  * /agents/{id}:
@@ -270,7 +270,7 @@ router.get('/agents', requireAuth, listLimiter, validate({ query: listQuery }), 
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/agents/:id', requireAuth, idLimiter, validate({ params: idParam }), asyncHandler(getAgent));
+router.get('/agents/:id', requireAuth, directoryReadLimiter, validate({ params: idParam }), asyncHandler(getAgent));
 /**
  * @openapi
  * /agents/me:
@@ -305,7 +305,7 @@ router.patch(
   requireRole('AGENT'),
   csrfProtection,
   validate({ body: updateAgentSchema }),
-  writeLimiter,
+  directoryWriteLimiter,
   asyncHandler(updateOwnProfile)
 );
 
@@ -352,7 +352,7 @@ router.patch(
  *                     pages: { type: 'integer' }
  */
 // Consultants
-router.get('/consultants', requireAuth, listLimiter, validate({ query: listQuery }), asyncHandler(listConsultants));
+router.get('/consultants', requireAuth, directoryListLimiter, validate({ query: listQuery }), asyncHandler(listConsultants));
 /**
  * @openapi
  * /consultants/{id}:
@@ -388,7 +388,7 @@ router.get('/consultants', requireAuth, listLimiter, validate({ query: listQuery
 router.get(
   '/consultants/:id',
   requireAuth,
-  idLimiter,
+  directoryReadLimiter,
   validate({ params: idParam }),
   asyncHandler(getConsultant)
 );
@@ -426,7 +426,7 @@ router.patch(
   requireRole('CONSULTANT'),
   csrfProtection,
   validate({ body: updateConsultantSchema }),
-  writeLimiter,
+  directoryWriteLimiter,
   asyncHandler(updateOwnProfile)
 );
 
@@ -482,7 +482,7 @@ router.patch(
   requireRole('STUDENT'),
   csrfProtection,
   validate({ body: updateStudentSchema }),
-  writeLimiter,
+  directoryWriteLimiter,
   asyncHandler(updateOwnProfile)
 );
 

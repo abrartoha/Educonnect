@@ -79,9 +79,9 @@ router.get('/csrf', asyncHandler(csrfToken));
  *             StudentSignup:
  *               summary: Student account signup
  *               value:
- *                 email: "student@example.com"
+ *                 email: "Jon.zhang@mail.com"
  *                 password: "Password123"
- *                 name: "John Doe"
+ *                 name: "Jon Zhang"
  *                 role: "STUDENT"
  *                 phone: "+1234567890"
  *                 nationality: "Australia"
@@ -112,8 +112,8 @@ router.get('/csrf', asyncHandler(csrfToken));
  *             example:
  *               user:
  *                 id: "uuid-123"
- *                 email: "student@example.com"
- *                 name: "John Doe"
+ *                 email: "wei.zhang@gmail.com"
+ *                 name: "Wei Zhang"
  *                 role: "STUDENT"
  *                 status: "ACTIVE"
  *                 avatarUrl: null
@@ -158,7 +158,7 @@ router.post(
  *           schema:
  *             $ref: '#/components/schemas/LoginRequest'
  *           example:
- *             email: "student@example.com"
+ *             email: "wei.zhang@gmail.com"
  *             password: "Password123"
  *     responses:
  *       200:
@@ -170,8 +170,8 @@ router.post(
  *             example:
  *               user:
  *                 id: "uuid-123"
- *                 email: "student@example.com"
- *                 name: "John Doe"
+ *                 email: "wei.zhang@gmail.com"
+ *                 name: "Wei Zhang"
  *                 role: "STUDENT"
  *                 status: "ACTIVE"
  *                 avatarUrl: null

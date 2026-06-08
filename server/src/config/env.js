@@ -25,6 +25,35 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
 
+  // Rate limit overrides (all optional — use defaults from rateLimits.js)
+  RL_GLOBAL_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_GLOBAL_LIMIT: z.coerce.number().int().positive().optional(),
+
+  RL_API_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_API_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_API_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_LOGIN_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_LOGIN_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_LOGIN_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_SIGNUP_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_SIGNUP_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_SIGNUP_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_DIR_LIST_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_DIR_LIST_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_DIR_LIST_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_DIR_READ_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_DIR_READ_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_DIR_READ_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_DIR_COMPARE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_DIR_COMPARE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_DIR_COMPARE_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_DIR_WRITE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_DIR_WRITE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_DIR_WRITE_BLOCK: z.coerce.number().int().positive().optional(),
+
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
   // Email (enquiry notifications). All optional in dev — when blank we
@@ -48,7 +77,6 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  // eslint-disable-next-line no-console
   console.error('Invalid environment configuration:', parsed.error.flatten().fieldErrors);
   process.exit(1);
 }
