@@ -3,7 +3,7 @@
 |-----|-----|
 | **Backend Developer:** | Jakariya Abbas |
 | **Creation Date:** | 08-05-2026 |
-| **Version:** | 1.0.0 |
+| **Version:** | 1.1.0 |
 
 ---
 
@@ -54,6 +54,42 @@ All three listing pages (`Universities.jsx`, `Agents.jsx`, `Consultants.jsx`) fe
 - Server-side `q`, `location`, and `verified` filters are dead code from the client's perspective.
 - Large datasets will degrade browser performance.
 
+#### Frontend Mock Data Audit — Profile Pages & Dashboards
+
+**Profile pages connected (no mock data):**
+All `*Profile.jsx` pages (agent, consultant, university, student) and `UniCampaigns.jsx` are fully connected with live APIs.
+
+**Dashboards using mock data:**
+
+| Component | API-Driven | Mock Data |
+|-----------|------------|-----------|
+| `StudentDashboard.jsx` | 6 API calls, zero mock data | None |
+| `AdminDashboard.jsx` | Stats, recent activity, pending approvals | `revenueData` chart data, some totals |
+| `AgentDashboard.jsx` | Profile data, some stats | `placementData`, `mockStudents`, `mockBookings`, trend strings |
+| `UniDashboard.jsx` | Profile data, real leads (count only) | `monthlyData`, `nationalityData`, `mockLeads` (leads table renders mock despite real fetch) |
+| `ConsultantDashboard.jsx` | Profile, reviews | `mockSchedule`, trend strings, fallback `mockReviews` |
+| `UniAnalytics.jsx` | `profile.views` (partial) | `generateViewsData()`, `courseInquiries`, `demographicsData`, `topCourses`, `inline Math.random()` |
+| `AgentAnalytics.jsx` | None | `monthlyPlacements`, `stats`, `recentActivity` |
+| `ConsultantAnalytics.jsx` | None | `weeklyData`, `stats`, `satisfactionData` |
+
+**All three `*Analytics.jsx` pages are entirely hardcoded with zero API calls.**
+
+**Hardcoded trend strings across all dashboards:** `+12%`, `+8.3%`, etc. — all computed on the frontend with no backend support.
+
+**Backend already exposes endpoints that could replace some mock data:**
+- `GET /leads`, `GET /leads/mine` — could replace `mockLeads` in `UniDashboard.jsx`
+- `GET /reviews/target/:targetId` — could replace fallback `mockReviews` in `ConsultantDashboard.jsx`
+- `GET /admin/overview` — already powers most of `AdminDashboard.jsx`
+
+**Missing backend support entirely (no endpoints exist):**
+- Bookings / Appointments
+- Consultant scheduling
+- Activity feed / notifications
+- Aggregated analytics and time-series reporting APIs for charts
+- Computed trend/growth calculations
+
+**Impact:** The CRUD foundation and auth layer are solid, but dedicated analytics, scheduling, booking, activity, and trend-computation modules are missing to fully replace frontend mock data.
+
 ---
 
 ## DB Models Used
@@ -91,28 +127,55 @@ server/src/modules/directory/
 
 ## Rate Limiting
 
-All directory endpoints are protected by the global `apiLimiter` applied at `server/src/app.js:80`:
+Directory endpoints use **Redis-backed rate limiters** from `server/src/shared/middleware/ratelimiter/presets.js`, with profiles defined in `server/src/shared/constants/rateLimits.js`. All directory limiters are scoped to `"user"` (authenticated user ID) and support route-specific counting.
 
-### Current Configuration
+In addition, the global legacy `apiLimiter` (300 req/15min, in-memory) is mounted at `app.js:82` on the `/api` prefix as a baseline for all API routes.
 
-| Parameter | Value | Environment Variable |
-|-----------|-------|----------------------|
-| Window | 15 minutes | `RATE_LIMIT_WINDOW_MS` |
-| Limit | 300 requests | `RATE_LIMIT_MAX` |
-| Key Strategy | User ID (authenticated) or IP (anonymous) | — |
+### Rate Limiter Assignments
 
-### Module-Specific Recommendations
+| Route | Limiter | Window | Limit | Block Duration |
+|-------|---------|--------|-------|----------------|
+| `GET /universities` | `directoryListLimiter` | 1 min | 10 | 5 min |
+| `GET /agents` | `directoryListLimiter` | 1 min | 10 | 5 min |
+| `GET /consultants` | `directoryListLimiter` | 1 min | 10 | 5 min |
+| `GET /universities/compare` | `directoryCompareLimiter` | 1 min | 5 | 5 min |
+| `GET /universities/:id` | `directoryReadLimiter` | 1 min | 20 | 5 min |
+| `GET /agents/:id` | `directoryReadLimiter` | 1 min | 20 | 5 min |
+| `GET /consultants/:id` | `directoryReadLimiter` | 1 min | 20 | 5 min |
+| `PATCH /universities/me` | `directoryWriteLimiter` | 1 hr | 5 | 1 hr |
+| `PATCH /agents/me` | `directoryWriteLimiter` | 1 hr | 5 | 1 hr |
+| `PATCH /consultants/me` | `directoryWriteLimiter` | 1 hr | 5 | 1 hr |
+| `PATCH /students/me` | `directoryWriteLimiter` | 1 hr | 5 | 1 hr |
 
-1. **Compare endpoint** (`GET /universities/compare`): Add a dedicated stricter limiter due to multi-ID DB queries.
-   - Suggested: 5 requests/minute per USER.
+### Limiter Details
 
-2. **Listing endpoints** (`GET /universities`, `GET /agents`, `GET /consultants`): Consider search-specific throttling if `q` parameter abuse becomes an issue. 
-   - Suggested: 10 requests/minute per USER.
+- **directoryListLimiter** — Throttles paginated listing endpoints. 10 requests/minute per user, 5-minute block on exceed.
+- **directoryReadLimiter** — Throttles single-profile detail views. 20 requests/minute per user, 5-minute block on exceed.
+- **directoryCompareLimiter** — Throttles the comparison endpoint (multi-ID DB query). 5 requests/minute per user, 5-minute block on exceed.
+- **directoryWriteLimiter** — Throttles profile update endpoints. 5 requests/hour per user, 1-hour block on exceed.
 
-3. **Write endpoints** (PATCH): The global limiter applies. For stricter per-user limits, import `apiLimiter` directly in `directory.routes.js` and apply per-route.
-   - Suggested: 10 requests/hour per USER for profile updates.
+### Environment Variable Overrides
+
+Every value can be overridden at runtime via `RL_DIR_*` env vars (defined in `server/src/config/env.js`):
+
+| Variable | Default | Profile |
+|----------|---------|---------|
+| `RL_DIR_LIST_WINDOW` | `60` (1 min) | directoryList |
+| `RL_DIR_LIST_LIMIT` | `10` | directoryList |
+| `RL_DIR_LIST_BLOCK` | `300` (5 min) | directoryList |
+| `RL_DIR_READ_WINDOW` | `60` (1 min) | directoryRead |
+| `RL_DIR_READ_LIMIT` | `20` | directoryRead |
+| `RL_DIR_READ_BLOCK` | `300` (5 min) | directoryRead |
+| `RL_DIR_COMPARE_WINDOW` | `60` (1 min) | directoryCompare |
+| `RL_DIR_COMPARE_LIMIT` | `5` | directoryCompare |
+| `RL_DIR_COMPARE_BLOCK` | `300` (5 min) | directoryCompare |
+| `RL_DIR_WRITE_WINDOW` | `3600` (1 hr) | directoryWrite |
+| `RL_DIR_WRITE_LIMIT` | `5` | directoryWrite |
+| `RL_DIR_WRITE_BLOCK` | `3600` (1 hr) | directoryWrite |
 
 ### Implementation Location
 
-- Global limiter: `server/src/shared/middleware/rateLimits.js:11-16`
-- Configuration: `server/src/config/env.js` (RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)
+- Rate limit profiles: `server/src/shared/constants/rateLimits.js`
+- Preset instantiation: `server/src/shared/middleware/ratelimiter/presets.js`
+- Limiter factory: `server/src/shared/middleware/ratelimiter/limiterFactory.js`
+- Route wiring: `server/src/modules/directory/directory.routes.js`
