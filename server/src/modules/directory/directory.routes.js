@@ -8,7 +8,7 @@ import {
   directoryReadLimiter,
   directoryCompareLimiter,
   directoryWriteLimiter,
-} from '../../shared/middleware/ratelimiter/presets.js';
+} from './directory.rate-limits.js';
 import {
   listUniversities,
   getUniversity,

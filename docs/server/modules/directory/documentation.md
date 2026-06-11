@@ -127,7 +127,7 @@ server/src/modules/directory/
 
 ## Rate Limiting
 
-Directory endpoints use **Redis-backed rate limiters** from `server/src/shared/middleware/ratelimiter/presets.js`, with profiles defined in `server/src/shared/constants/rateLimits.js`. All directory limiters are scoped to `"user"` (authenticated user ID) and support route-specific counting.
+Directory endpoints use **Redis-backed rate limiters** defined locally in `server/src/modules/directory/directory.rate-limits.js`, using the limiter factory from `server/src/shared/middleware/ratelimiter/limiterFactory.js`. All directory limiters are scoped to `"user"` (authenticated user ID) and support route-specific counting.
 
 In addition, the global legacy `apiLimiter` (300 req/15min, in-memory) is mounted at `app.js:82` on the `/api` prefix as a baseline for all API routes.
 
@@ -175,7 +175,7 @@ Every value can be overridden at runtime via `RL_DIR_*` env vars (defined in `se
 
 ### Implementation Location
 
-- Rate limit profiles: `server/src/shared/constants/rateLimits.js`
-- Preset instantiation: `server/src/shared/middleware/ratelimiter/presets.js`
+- Rate limit definitions: `server/src/modules/directory/directory.rate-limits.js`
+- Global presets: `server/src/shared/middleware/ratelimiter/presets.js`
 - Limiter factory: `server/src/shared/middleware/ratelimiter/limiterFactory.js`
 - Route wiring: `server/src/modules/directory/directory.routes.js`

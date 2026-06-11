@@ -97,7 +97,7 @@ This is a production best practice: it's better to miss some abuse than to block
 
 ## Redis-Backed Preset Configurations
 
-All presets are defined in `server/src/shared/constants/rateLimits.js` and instantiated in `server/src/shared/middleware/ratelimiter/presets.js`. Every value can be overridden via `RL_*` environment variables.
+Global presets (global, api, login, signup) are defined in `server/src/shared/middleware/ratelimiter/presets.js`. Module-specific limiters (e.g. directory) live alongside their module in `server/src/modules/<module>/<module>.rate-limits.js`. Every value can be overridden via `RL_*` environment variables.
 
 ### General
 
@@ -148,121 +148,19 @@ routeSpecificLimit: true
 ```
 Env overrides: `RL_SIGNUP_WINDOW`, `RL_SIGNUP_LIMIT`, `RL_SIGNUP_BLOCK`
 
-### Directory
-
-#### directoryListLimiter
-```js
-// 10 list requests per minute per user
-// Blocks for 5 minutes after exceeding
-// Applied to: GET /universities, GET /agents, GET /consultants
-window: 60 seconds
-limit: 10
-scope: "user"
-blockDuration: 300 seconds (5 min)
-routeSpecificLimit: true
-```
-Env overrides: `RL_DIR_LIST_WINDOW`, `RL_DIR_LIST_LIMIT`, `RL_DIR_LIST_BLOCK`
-
-#### directoryReadLimiter
-```js
-// 20 read requests per minute per user
-// Blocks for 5 minutes after exceeding
-// Applied to: GET /universities/:id, GET /agents/:id, GET /consultants/:id
-window: 60 seconds
-limit: 20
-scope: "user"
-blockDuration: 300 seconds (5 min)
-routeSpecificLimit: true
-```
-Env overrides: `RL_DIR_READ_WINDOW`, `RL_DIR_READ_LIMIT`, `RL_DIR_READ_BLOCK`
-
-#### directoryCompareLimiter
-```js
-// 5 compare requests per minute per user
-// Blocks for 5 minutes after exceeding (heavy multi-ID query)
-// Applied to: GET /universities/compare
-window: 60 seconds
-limit: 5
-scope: "user"
-blockDuration: 300 seconds (5 min)
-routeSpecificLimit: true
-```
-Env overrides: `RL_DIR_COMPARE_WINDOW`, `RL_DIR_COMPARE_LIMIT`, `RL_DIR_COMPARE_BLOCK`
-
-#### directoryWriteLimiter
-```js
-// 5 write requests per hour per user
-// Blocks for 1 hour after exceeding
-// Applied to: PATCH /universities/me, PATCH /agents/me, PATCH /consultants/me, PATCH /students/me
-window: 3600 seconds (1 hour)
-limit: 5
-scope: "user"
-blockDuration: 3600 seconds (1 hour)
-```
-Env overrides: `RL_DIR_WRITE_WINDOW`, `RL_DIR_WRITE_LIMIT`, `RL_DIR_WRITE_BLOCK`
-
----
-
-## Legacy Rate Limiters (`express-rate-limit`)
-
-Defined in `server/src/shared/middleware/rateLimits.js`. Uses in-memory storage (not shared across instances). Always active even if Redis is unavailable.
-
-### apiLimiter (legacy)
-- **Window:** `RATE_LIMIT_WINDOW_MS` (default 900000ms = 15 min)
-- **Limit:** `RATE_LIMIT_MAX` (default 300)
-- **Key:** `req.user.id` or `req.ip`
-- **Used at:** `app.js:82` — mounted on `/api` prefix as a global baseline
-
-### authLimiter
-- **Window:** `RATE_LIMIT_WINDOW_MS` (default 900000ms = 15 min)
-- **Limit:** `AUTH_RATE_LIMIT_MAX` (default 10)
-- **Key:** IP-based (default)
-- **Note:** `skipSuccessfulRequests: true` — only failed attempts count
-- **Used at:** `auth.routes.js` — `POST /auth/login`, `POST /auth/refresh`
-
-### signupLimiter (legacy)
-- **Window:** 1 hour (hardcoded)
-- **Limit:** 5
-- **Key:** IP-based (default)
-- **Used at:** `auth.routes.js` — `POST /auth/signup`
-
-> **Note:** The auth routes currently use the **legacy** `express-rate-limit` system. A Redis-backed `loginLimiter` and `signupLimiter` exist in presets but are not yet wired to auth routes.
-
 ---
 
 ## Server Side Code Sample
 
-### Redis-backed (directory routes)
 ```js
-import {
-  directoryListLimiter,
-  directoryReadLimiter,
-  directoryCompareLimiter,
-  directoryWriteLimiter,
-} from '../../shared/middleware/ratelimiter/presets.js';
+import { loginLimiter } from '../../shared/middleware/ratelimiter/presets.js';
+import { directoryListLimiter } from '../../modules/directory/directory.rate-limits.js';
 
-// List universities — max 10 per minute per user
+// Global presets — imported from presets.js
+router.post('/auth/login', loginLimiter, validate({ body: loginSchema }), asyncHandler(login));
+
+// Module-specific limiters — imported from the module's rate-limits file
 router.get('/universities', requireAuth, directoryListLimiter, asyncHandler(listUniversities));
-
-// Compare — max 5 per minute per user
-router.get('/universities/compare', requireAuth, directoryCompareLimiter, asyncHandler(compareUniversities));
-
-// Read — max 20 per minute per user
-router.get('/universities/:id', requireAuth, directoryReadLimiter, asyncHandler(getUniversity));
-
-// Write — max 5 per hour per user
-router.patch('/universities/me', requireAuth, directoryWriteLimiter, asyncHandler(updateOwnProfile));
-```
-
-### Legacy (auth routes)
-```js
-import { authLimiter, signupLimiter } from '../../shared/middleware/rateLimits.js';
-
-// Signup — max 5 per hour per IP
-router.post('/auth/signup', signupLimiter, validate({ body: signupSchema }), asyncHandler(signup));
-
-// Login — max 10 failures per 15 min per IP
-router.post('/auth/login', authLimiter, validate({ body: loginSchema }), asyncHandler(login));
 ```
 
 ---
@@ -276,7 +174,6 @@ X-RateLimit-Limit: 5           ← max requests allowed in window
 X-RateLimit-Remaining: 3       ← requests left before limit
 ```
 
-Legacy limiters also set `X-RateLimit-Limit` and `X-RateLimit-Remaining` via `express-rate-limit` with `standardHeaders: 'draft-7'`.
 
 ---
 
@@ -291,7 +188,7 @@ Legacy limiters also set `X-RateLimit-Limit` and `X-RateLimit-Remaining` via `ex
 ```
 **HTTP Status:** `429 Too Many Requests`
 
-### Temporarily Blocked (Redis-backed only)
+### Temporarily Blocked
 ```json
 {
   "success": false,
@@ -306,14 +203,7 @@ Legacy limiters also set `X-RateLimit-Limit` and `X-RateLimit-Remaining` via `ex
 
 All rate limit env vars are defined in `server/src/config/env.js` via Zod schema.
 
-### Legacy (`express-rate-limit`)
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `RATE_LIMIT_WINDOW_MS` | `900000` (15 min) | Window for `apiLimiter` and `authLimiter` |
-| `RATE_LIMIT_MAX` | `300` | Max requests per window for `apiLimiter` |
-| `AUTH_RATE_LIMIT_MAX` | `10` | Max failed attempts per window for `authLimiter` |
-
-### Redis-backed overrides
+### Environment Variable Overrides
 | Variable | Default | Profile |
 |----------|---------|---------|
 | `RL_GLOBAL_WINDOW` | `60` | global |

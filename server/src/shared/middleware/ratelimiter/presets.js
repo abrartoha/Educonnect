@@ -1,14 +1,30 @@
-//@ts-check
 import { rateLimiter } from './limiterFactory.js';
-import { RATE_LIMIT_PROFILES } from '../../constants/rateLimits.js';
+import { env } from '../../config/env.js';
+import { minutes, hours } from '../../shared/utils/time.js';
 
+export const globalLimiter = rateLimiter({
+  window: env.RL_GLOBAL_WINDOW ?? minutes(1),
+  limit: env.RL_GLOBAL_LIMIT ?? 100,
+});
 
-export const globalLimiter = rateLimiter(RATE_LIMIT_PROFILES.global);
-export const apiLimiter = rateLimiter(RATE_LIMIT_PROFILES.api);
-export const loginLimiter = rateLimiter(RATE_LIMIT_PROFILES.login);
-export const signupLimiter = rateLimiter(RATE_LIMIT_PROFILES.signup);
+export const apiLimiter = rateLimiter({
+  window: env.RL_API_WINDOW ?? minutes(1),
+  limit: env.RL_API_LIMIT ?? 5,
+  blockDuration: env.RL_API_BLOCK ?? minutes(15),
+});
 
-export const directoryListLimiter = rateLimiter(RATE_LIMIT_PROFILES.directoryList);
-export const directoryReadLimiter = rateLimiter(RATE_LIMIT_PROFILES.directoryRead);
-export const directoryCompareLimiter = rateLimiter(RATE_LIMIT_PROFILES.directoryCompare);
-export const directoryWriteLimiter = rateLimiter(RATE_LIMIT_PROFILES.directoryWrite);
+export const loginLimiter = rateLimiter({
+  window: env.RL_LOGIN_WINDOW ?? minutes(15),
+  limit: env.RL_LOGIN_LIMIT ?? 5,
+  scope: 'email',
+  routeSpecificLimit: true,
+  blockDuration: env.RL_LOGIN_BLOCK ?? minutes(30),
+});
+
+export const signupLimiter = rateLimiter({
+  window: env.RL_SIGNUP_WINDOW ?? hours(1),
+  limit: env.RL_SIGNUP_LIMIT ?? 5,
+  scope: 'email',
+  routeSpecificLimit: true,
+  blockDuration: env.RL_SIGNUP_BLOCK ?? hours(1),
+});
