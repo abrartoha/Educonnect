@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { z } from 'zod';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { validate } from '../../shared/middleware/validate.js';
 import { requireAuth, requireRole } from '../../shared/middleware/auth.js';
@@ -23,23 +22,12 @@ import {
   adminPinPostLimiter,
   adminPostStatusLimiter,
 } from './admin.rate-limits.js';
+import { listUsersQuery, postStatusBody } from './admin.schema.js';
 
 const router = Router();
 
 // Every admin route demands auth + ADMIN role.
 router.use(requireAuth, requireRole('ADMIN'));
-
-const listUsersQuery = z.object({
-  role: z.enum(['ADMIN', 'UNIVERSITY', 'AGENT', 'CONSULTANT', 'STUDENT']).optional(),
-  status: z.enum(['PENDING', 'ACTIVE', 'SUSPENDED']).optional(),
-  q: z.string().max(120).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
-
-const postStatusBody = z.object({
-  status: z.enum(['PUBLISHED', 'HIDDEN', 'REMOVED']),
-});
 
 router.get('/overview', adminOverviewLimiter, asyncHandler(overview));
 router.get(
