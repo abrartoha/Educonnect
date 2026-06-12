@@ -5,6 +5,7 @@ import {
   BadRequestError,
   ConflictError,
 } from '../../shared/utils/errors.js';
+import { responseHandler } from '../../shared/utils/responseHandler.js';
 
 const userMini = {
   select: { id: true, name: true, avatarUrl: true, role: true },
@@ -17,7 +18,7 @@ export const listForTarget = async (req, res) => {
     orderBy: { createdAt: 'desc' },
     include: { reviewer: userMini },
   });
-  res.json({ items });
+  responseHandler.ok(res, items);
 };
 
 export const createReview = async (req, res) => {
@@ -81,5 +82,5 @@ export const createReview = async (req, res) => {
     return [r];
   });
 
-  res.status(201).json({ item: review });
+  responseHandler.created(res, review);
 };

@@ -6,6 +6,7 @@ import {
 } from '../../shared/utils/errors.js';
 import { sendEnquiryEmail } from '../../shared/services/email.js';
 import { logger } from '../../config/logger.js';
+import { responseHandler } from '../../shared/utils/responseHandler.js';
 
 const userMini = {
   select: { id: true, name: true, avatarUrl: true, email: true, role: true },
@@ -60,7 +61,7 @@ export const createLead = async (req, res) => {
     logger.error({ err, leadId: lead.id }, 'Enquiry email failed');
   });
 
-  res.status(201).json({ item: lead });
+  responseHandler.created(res, lead);
 };
 
 // Provider (uni/agent/consultant) sees enquiries sent to them.
@@ -70,7 +71,7 @@ export const listMyLeads = async (req, res) => {
     orderBy: { createdAt: 'desc' },
     include: { student: userMini },
   });
-  res.json({ items });
+  responseHandler.ok(res, items);
 };
 
 export const updateLeadStatus = async (req, res) => {
@@ -86,7 +87,7 @@ export const updateLeadStatus = async (req, res) => {
     data: { status: req.body.status },
     include: { student: userMini },
   });
-  res.json({ item: lead });
+  responseHandler.updated(res, lead);
 };
 
 // Student sees enquiries they submitted (for history).
@@ -97,5 +98,5 @@ export const listMySubmittedLeads = async (req, res) => {
     orderBy: { createdAt: 'desc' },
     include: { target: userMini },
   });
-  res.json({ items });
+  responseHandler.ok(res, items);
 };

@@ -1,19 +1,20 @@
 import { prisma } from '../../db/prisma.js';
 import { NotFoundError, ForbiddenError } from '../../shared/utils/errors.js';
+import { responseHandler } from '../../shared/utils/responseHandler.js';
 
 export const listMyCampaigns = async (req, res) => {
   const items = await prisma.campaign.findMany({
     where: { universityId: req.user.id },
     orderBy: { createdAt: 'desc' },
   });
-  res.json({ items });
+  responseHandler.ok(res, items);
 };
 
 export const createCampaign = async (req, res) => {
   const campaign = await prisma.campaign.create({
     data: { ...req.body, universityId: req.user.id },
   });
-  res.status(201).json({ item: campaign });
+  responseHandler.created(res, campaign);
 };
 
 export const updateCampaign = async (req, res) => {
@@ -28,7 +29,7 @@ export const updateCampaign = async (req, res) => {
     where: { id: req.params.id },
     data: req.body,
   });
-  res.json({ item: campaign });
+  responseHandler.updated(res, campaign);
 };
 
 export const deleteCampaign = async (req, res) => {
@@ -40,5 +41,5 @@ export const deleteCampaign = async (req, res) => {
   if (existing.universityId !== req.user.id) throw new ForbiddenError();
 
   await prisma.campaign.delete({ where: { id: req.params.id } });
-  res.json({ ok: true });
+  responseHandler.noContent(res);
 };
