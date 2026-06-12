@@ -54,6 +54,35 @@ const envSchema = z.object({
   RL_DIR_WRITE_LIMIT: z.coerce.number().int().positive().optional(),
   RL_DIR_WRITE_BLOCK: z.coerce.number().int().positive().optional(),
 
+  // Admin rate limiters
+  RL_ADMIN_OVERVIEW_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_OVERVIEW_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_OVERVIEW_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_LIST_USERS_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_LIST_USERS_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_LIST_USERS_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_APPROVE_USER_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_APPROVE_USER_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_APPROVE_USER_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_SUSPEND_USER_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_SUSPEND_USER_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_SUSPEND_USER_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_REACTIVATE_USER_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_REACTIVATE_USER_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_REACTIVATE_USER_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_PIN_POST_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_PIN_POST_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_PIN_POST_BLOCK: z.coerce.number().int().positive().optional(),
+
+  RL_ADMIN_POST_STATUS_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_POST_STATUS_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_ADMIN_POST_STATUS_BLOCK: z.coerce.number().int().positive().optional(),
+
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
   // Email (enquiry notifications). All optional in dev — when blank we
