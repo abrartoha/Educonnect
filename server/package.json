@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Production backend for the Education Marketplace — Node/Express + PostgreSQL/Prisma.",
   "scripts": {
-    "dev": "node --watch src/server.js",
+    "dev": "node --watch src/server.js | pino-pretty --colorize --translateTime 'HH:MM:ss' --ignore pid,hostname",
     "start": "NODE_ENV=production node src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
