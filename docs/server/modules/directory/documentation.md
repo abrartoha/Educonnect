@@ -110,9 +110,10 @@ All profiles are 1:1 relations with the `User` model
 
 ```
 server/src/modules/directory/
-├── directory.controller.js   # All handlers
-├── directory.routes.js       # Route definitions + middleware
-└── profile.schema.js         # Zod schemas (listQuery, compareQuery, update schemas)
+├── directory.service.js        # All DB queries and business logic
+├── directory.controller.js     # Express route handlers (calls service methods)
+├── directory.routes.js         # Route definitions + middleware
+└── profile.schema.js           # Zod schemas (listQuery, compareQuery, update schemas)
 ```
 
 ---

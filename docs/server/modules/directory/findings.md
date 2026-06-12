@@ -15,12 +15,12 @@
 
 ### Security & Privacy
 - [ ] **Public endpoints return `email`** via `uniSelect/agentSelect/consultantSelect` — exposes PII. (Severity: **Critical**)
-    - Remove email from selects in `directory.controller.js` for all public-facing routes. No need to show emails to other users.
+    - Remove email from selects in `directory.service.js` for all public-facing routes. No need to show emails to other users.
 - [ ] **No authentication on list endpoints** — `GET /universities`, `GET /agents`, `GET /consultants` have no access control. (Severity: **High**)
     - Should implement auth checks or remains public if intended.
 - [ ] **Unbounded pagination** — `buildListArgs` accepts `limit` directly from user without clamping. (Severity: **High**)
     - Attack: `?limit=10000` causes memory exhaustion or DB load spike.
-    - Fix: Add `Math.min(limit, 100)` in `directory.controller.js:68`.
+    - Fix: Add `Math.min(limit, 100)` in `directory.service.js:71` (inside `buildListArgs`).
 - [ ] **Unthrottled view counter** — every `GET /universities/:id` triggers DB write (Severity: **Medium**)
     - Attack: High-frequency requests spam the DB.
     - Fix: Throttle to once per session/IP per hour, or batch via async job.
@@ -41,7 +41,7 @@
     - Consider adding search rate limiting or switching to full-text search indexes.
 
 ### Error Handling
-- [ ] **Silent error swallowing** — `getByRole` uses `.catch(() => {})` which swallows all DB errors silently, no logging if `universityProfile` views increment fails. (Severity: **Low**)
+- [ ] **Silent error swallowing** — `getProfileById` uses `.catch(() => {})` which swallows all DB errors silently, no logging if `universityProfile` views increment fails. (Severity: **Low**)
 - [x] **`compareUniversities` error response** — returns `200` with an error object on invalid input. (Severity: **Medium** — Fixed)
     - FIXED in PR(fix/validate-university-compare-ids).
 
