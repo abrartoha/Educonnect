@@ -22,6 +22,7 @@ const swaggerDefinition = {
   tags: [
     { name: 'Auth', description: 'Authentication, session management, and CSRF tokens' },
     { name: 'Directory', description: 'Directory browsing and profile management' },
+    { name: 'Business', description: 'Campaigns, leads (enquiries), and reviews for universities, agents, and consultants' },
   ],
   info: {
     title: 'EduConnect API',

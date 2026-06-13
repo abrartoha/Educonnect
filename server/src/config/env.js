@@ -83,6 +83,42 @@ const envSchema = z.object({
   RL_ADMIN_POST_STATUS_LIMIT: z.coerce.number().int().positive().optional(),
   RL_ADMIN_POST_STATUS_BLOCK: z.coerce.number().int().positive().optional(),
 
+  // Business module rate limiters — Reviews
+  RL_BIZ_REVIEW_LIST_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_REVIEW_LIST_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_REVIEW_LIST_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_REVIEW_CREATE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_REVIEW_CREATE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_REVIEW_CREATE_BLOCK: z.coerce.number().int().positive().optional(),
+
+  // Business module rate limiters — Campaigns
+  RL_BIZ_CAMPAIGN_LIST_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_LIST_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_LIST_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_CREATE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_CREATE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_CREATE_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_UPDATE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_UPDATE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_UPDATE_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_DELETE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_DELETE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_DELETE_BLOCK: z.coerce.number().int().positive().optional(),
+
+  // Business module rate limiters — Leads
+  RL_BIZ_LEAD_SUBMIT_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_SUBMIT_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_SUBMIT_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_LIST_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_LIST_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_LIST_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_MINE_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_MINE_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_MINE_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATUS_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATUS_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATUS_BLOCK: z.coerce.number().int().positive().optional(),
+
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
   // Email (enquiry notifications). All optional in dev — when blank we
