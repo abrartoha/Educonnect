@@ -87,3 +87,19 @@ export const leadStatusUpdateLimiter = rateLimiter({
   routeSpecificLimit: true,
   blockDuration: env.RL_BIZ_LEAD_STATUS_BLOCK ?? hours(1),
 });
+
+export const leadStatsLimiter = rateLimiter({
+  window: env.RL_BIZ_LEAD_STATS_WINDOW ?? minutes(5),
+  limit: env.RL_BIZ_LEAD_STATS_LIMIT ?? 10,
+  scope: 'user',
+  routeSpecificLimit: true,
+  blockDuration: env.RL_BIZ_LEAD_STATS_BLOCK ?? minutes(5),
+});
+
+export const campaignStatsLimiter = rateLimiter({
+  window: env.RL_BIZ_CAMPAIGN_STATS_WINDOW ?? minutes(5),
+  limit: env.RL_BIZ_CAMPAIGN_STATS_LIMIT ?? 10,
+  scope: 'user',
+  routeSpecificLimit: true,
+  blockDuration: env.RL_BIZ_CAMPAIGN_STATS_BLOCK ?? minutes(5),
+});

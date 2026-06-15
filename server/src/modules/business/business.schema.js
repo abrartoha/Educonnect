@@ -47,6 +47,19 @@ export const updateLeadStatusSchema = z.object({
   status: z.enum(['NEW', 'CONTACTED', 'CONVERTED', 'CLOSED']),
 });
 
+// --- Stats (shared date-range query) ----------------------------------------
+
+const dateRangeQuery = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export const leadStatsQuerySchema = dateRangeQuery.extend({
+  granularity: z.enum(['day', 'week', 'month']).default('week'),
+});
+
+export const campaignStatsQuerySchema = dateRangeQuery;
+
 // --- Reviews ----------------------------------------------------------------
 
 export const createReviewBodySchema = z.object({

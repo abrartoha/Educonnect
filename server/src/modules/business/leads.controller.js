@@ -4,6 +4,7 @@ import {
   listMyLeads as listMyLeadsService,
   updateLeadStatus as updateLeadStatusService,
   listMySubmittedLeads as listMySubmittedLeadsService,
+  getLeadStats as getLeadStatsService,
 } from './leads.service.js';
 
 export const createLead = async (req, res) => {
@@ -24,4 +25,9 @@ export const updateLeadStatus = async (req, res) => {
 export const listMySubmittedLeads = async (req, res) => {
   const result = await listMySubmittedLeadsService(req.user.id, req.query);
   responseHandler.paginated(res, result.items, result.meta);
+};
+
+export const getLeadStats = async (req, res) => {
+  const stats = await getLeadStatsService(req.user.id, req.query);
+  responseHandler.ok(res, stats);
 };

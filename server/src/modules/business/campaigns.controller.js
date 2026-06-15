@@ -4,6 +4,7 @@ import {
   createCampaign as createCampaignService,
   updateCampaign as updateCampaignService,
   deleteCampaign as deleteCampaignService,
+  getCampaignStats as getCampaignStatsService,
 } from './campaigns.service.js';
 
 export const listMyCampaigns = async (req, res) => {
@@ -24,4 +25,9 @@ export const updateCampaign = async (req, res) => {
 export const deleteCampaign = async (req, res) => {
   await deleteCampaignService(req.params.id, req.user.id);
   responseHandler.noContent(res);
+};
+
+export const getCampaignStats = async (req, res) => {
+  const stats = await getCampaignStatsService(req.user.id, req.query);
+  responseHandler.ok(res, stats);
 };

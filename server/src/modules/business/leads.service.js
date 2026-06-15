@@ -134,3 +134,73 @@ export const listMySubmittedLeads = async (studentId, { page = 1, limit = 20 }) 
 
   return { items, meta: { page, limit, total } };
 };
+
+const LEAD_STATUSES = ['NEW', 'CONTACTED', 'CONVERTED', 'CLOSED'];
+
+const startOfDay = (d) => {
+  const r = new Date(d);
+  r.setHours(0, 0, 0, 0);
+  return r;
+};
+
+const truncateDate = (date, granularity) => {
+  const d = new Date(date);
+  if (granularity === 'month') {
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+  } else if (granularity === 'week') {
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+  } else {
+    d.setHours(0, 0, 0, 0);
+  }
+  return d.toISOString().slice(0, 10);
+};
+
+export const getLeadStats = async (targetId, { startDate, endDate, granularity = 'week' }) => {
+  const where = { targetId };
+  if (startDate || endDate) {
+    where.createdAt = {};
+    if (startDate) where.createdAt.gte = startOfDay(startDate);
+    if (endDate) where.createdAt.lte = new Date(endDate);
+  }
+
+  const [statusGroups, leads, total] = await Promise.all([
+    prisma.lead.groupBy({
+      by: ['status'],
+      where,
+      _count: { _all: true },
+    }),
+    prisma.lead.findMany({
+      where,
+      select: { createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.lead.count({ where }),
+  ]);
+
+  const statusDistribution = Object.fromEntries(
+    LEAD_STATUSES.map((s) => [s, 0]),
+  );
+  for (const g of statusGroups) {
+    statusDistribution[g.status] = g._count._all;
+  }
+
+  const bucketMap = new Map();
+  for (const { createdAt } of leads) {
+    const key = truncateDate(createdAt, granularity);
+    bucketMap.set(key, (bucketMap.get(key) ?? 0) + 1);
+  }
+
+  const timeSeries = Array.from(bucketMap, ([date, count]) => ({ date, count }));
+
+  return {
+    statusDistribution: Object.entries(statusDistribution).map(([status, count]) => ({
+      status,
+      count,
+    })),
+    timeSeries,
+    total,
+  };
+};

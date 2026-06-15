@@ -237,6 +237,83 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 
+/**
+ * @openapi
+ * /campaigns/stats:
+ *   get:
+ *     summary: Get campaign conversion stats
+ *     description: |
+ *       Retrieve aggregated conversion statistics for all campaigns owned by the authenticated university.
+ *       Returns per-campaign metrics (lead count, conversion rate, CTR) plus a summary across all campaigns.
+ *       Leads are attributed to campaigns by date-range overlap (lead.createdAt within campaign.startDate–endDate).
+ *       **Requires**: UNIVERSITY role.
+ *     tags: [Business]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: startDate
+ *         in: query
+ *         description: Filter leads created on or after this date (ISO 8601)
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2026-01-01"
+ *       - name: endDate
+ *         in: query
+ *         description: Filter leads created on or before this date (ISO 8601)
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2026-12-31"
+ *     responses:
+ *       200:
+ *         description: Campaign conversion statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: 'boolean' }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         totalCampaigns: { type: 'integer' }
+ *                         totalLeads: { type: 'integer' }
+ *                         totalConverted: { type: 'integer' }
+ *                         avgConversionRate: { type: 'number', format: 'float' }
+ *                     campaigns:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           campaignId: { type: 'string' }
+ *                           name: { type: 'string' }
+ *                           status: { type: 'string', enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ENDED'] }
+ *                           totalLeads: { type: 'integer' }
+ *                           convertedLeads: { type: 'integer' }
+ *                           conversionRate: { type: 'number', format: 'float' }
+ *                           impressions: { type: 'integer' }
+ *                           clicks: { type: 'integer' }
+ *                           ctr: { type: 'number', format: 'float' }
+ *                 message: { type: 'string' }
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized (requires UNIVERSITY role)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
 // ---- Leads -----------------------------------------------------------------
 
 /**
@@ -470,6 +547,84 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  *       429:
  *         description: Rate limit exceeded
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * /leads/stats:
+ *   get:
+ *     summary: Get lead statistics
+ *     description: |
+ *       Retrieve aggregated lead statistics for the authenticated user.
+ *       Returns status distribution (NEW, CONTACTED, CONVERTED, CLOSED counts),
+ *       time-series data bucketed by the specified granularity, and total lead count.
+ *       **Requires**: UNIVERSITY, AGENT, or CONSULTANT role.
+ *     tags: [Business]
+ *     security:
+ *       - bearerAuth: []
+ *       - cookieAuth: []
+ *     parameters:
+ *       - name: startDate
+ *         in: query
+ *         description: Filter leads created on or after this date (ISO 8601)
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2026-01-01"
+ *       - name: endDate
+ *         in: query
+ *         description: Filter leads created on or before this date (ISO 8601)
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2026-12-31"
+ *       - name: granularity
+ *         in: query
+ *         description: Time-series bucket granularity
+ *         schema:
+ *           type: string
+ *           enum: [day, week, month]
+ *           default: week
+ *     responses:
+ *       200:
+ *         description: Lead statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: 'boolean' }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     statusDistribution:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           status: { type: 'string', enum: ['NEW', 'CONTACTED', 'CONVERTED', 'CLOSED'] }
+ *                           count: { type: 'integer' }
+ *                     timeSeries:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           date: { type: 'string', format: 'date', description: 'Bucket start date (YYYY-MM-DD)' }
+ *                           count: { type: 'integer' }
+ *                     total: { type: 'integer' }
+ *                 message: { type: 'string' }
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Not authorized (requires UNIVERSITY, AGENT, or CONSULTANT role)
  *         content:
  *           application/json:
  *             schema:

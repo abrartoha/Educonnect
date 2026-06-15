@@ -10,6 +10,8 @@ import {
   createLeadSchema,
   updateLeadStatusSchema,
   createReviewBodySchema,
+  leadStatsQuerySchema,
+  campaignStatsQuerySchema,
 } from './business.schema.js';
 import {
   reviewsListLimiter,
@@ -18,22 +20,26 @@ import {
   campaignCreateLimiter,
   campaignUpdateLimiter,
   campaignDeleteLimiter,
+  campaignStatsLimiter,
   leadSubmitLimiter,
   leadListLimiter,
   leadMineListLimiter,
   leadStatusUpdateLimiter,
+  leadStatsLimiter,
 } from './business.rate-limits.js';
 import {
   listMyCampaigns,
   createCampaign,
   updateCampaign,
   deleteCampaign,
+  getCampaignStats,
 } from './campaigns.controller.js';
 import {
   createLead,
   listMyLeads,
   updateLeadStatus,
   listMySubmittedLeads,
+  getLeadStats,
 } from './leads.controller.js';
 import {
   listForTarget,
@@ -43,6 +49,14 @@ import {
 const router = Router();
 
 // ---- Campaigns (university-scoped) ----------------------------------------
+router.get(
+  '/campaigns/stats',
+  requireAuth,
+  requireRole('UNIVERSITY'),
+  campaignStatsLimiter,
+  validate({ query: campaignStatsQuerySchema }),
+  asyncHandler(getCampaignStats),
+);
 router.get(
   '/campaigns',
   requireAuth,
@@ -81,6 +95,14 @@ router.delete(
 
 // ---- Leads (student → uni / agent / consultant) ---------------------------
 // `/leads` returns leads received by the caller (uni/agent/consultant).
+router.get(
+  '/leads/stats',
+  requireAuth,
+  requireRole('UNIVERSITY', 'AGENT', 'CONSULTANT'),
+  leadStatsLimiter,
+  validate({ query: leadStatsQuerySchema }),
+  asyncHandler(getLeadStats),
+);
 router.get(
   '/leads',
   requireAuth,
