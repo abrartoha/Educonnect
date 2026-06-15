@@ -104,6 +104,9 @@ const envSchema = z.object({
   RL_BIZ_CAMPAIGN_DELETE_WINDOW: z.coerce.number().int().positive().optional(),
   RL_BIZ_CAMPAIGN_DELETE_LIMIT: z.coerce.number().int().positive().optional(),
   RL_BIZ_CAMPAIGN_DELETE_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_STATS_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_STATS_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_CAMPAIGN_STATS_BLOCK: z.coerce.number().int().positive().optional(),
 
   // Business module rate limiters — Leads
   RL_BIZ_LEAD_SUBMIT_WINDOW: z.coerce.number().int().positive().optional(),
@@ -118,6 +121,9 @@ const envSchema = z.object({
   RL_BIZ_LEAD_STATUS_WINDOW: z.coerce.number().int().positive().optional(),
   RL_BIZ_LEAD_STATUS_LIMIT: z.coerce.number().int().positive().optional(),
   RL_BIZ_LEAD_STATUS_BLOCK: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATS_WINDOW: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATS_LIMIT: z.coerce.number().int().positive().optional(),
+  RL_BIZ_LEAD_STATS_BLOCK: z.coerce.number().int().positive().optional(),
 
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
