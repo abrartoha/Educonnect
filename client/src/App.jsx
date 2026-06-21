@@ -8,6 +8,8 @@ const DashboardLayout = lazy(() => import('./components/layout/DashboardLayout')
 // Pages
 const Login = lazy(() => import('./pages/auth/Login'))
 const Signup = lazy(() => import('./pages/auth/Signup'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
 
 // Feed
 const Feed = lazy(() => import('./pages/Feed'))
@@ -141,6 +143,8 @@ export default function App() {
         {/* Auth routes (only for unauthenticated users) */}
         <Route path="/login" element={<RedirectIfAuthed><Login /></RedirectIfAuthed>} />
         <Route path="/signup" element={<RedirectIfAuthed><Signup /></RedirectIfAuthed>} />
+        <Route path="/forgot-password" element={<RedirectIfAuthed><ForgotPassword /></RedirectIfAuthed>} />
+        <Route path="/reset-password" element={<RedirectIfAuthed><ResetPassword /></RedirectIfAuthed>} />
 
         {/* Feed is the landing page */}
         <Route path="/" element={<RequireAuth><Feed /></RequireAuth>} />
