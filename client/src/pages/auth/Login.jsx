@@ -518,11 +518,10 @@ export default function Login() {
                     key={role.id}
                     type="button"
                     onClick={() => setSelectedRole(role.id)}
-                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      isActive
-                        ? `bg-white shadow-sm ${role.textColor}`
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-medium transition-all duration-200 ${isActive
+                      ? `bg-white shadow-sm ${role.textColor}`
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{role.label}</span>
@@ -629,40 +628,43 @@ export default function Login() {
           </p>
 
           {/* Demo credentials hint */}
-          <motion.div
-            key={selectedRole}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className={`mt-6 p-4 rounded-xl border ${activeRole.bgLight} ${activeRole.borderColor}/40`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${activeRole.textColor}`}>
-                Demo Credentials
-              </span>
-              <button
-                type="button"
-                onClick={fillDemoCredentials}
-                className={`text-xs font-medium ${activeRole.textColor} hover:underline`}
+          {
+            import.meta.env.MODE === 'development' && (
+              <motion.div
+                key={selectedRole}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className={`mt-6 p-4 rounded-xl border ${activeRole.bgLight} ${activeRole.borderColor}/40`}
               >
-                Auto-fill
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Email:</span>{' '}
-                <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
-                  {demoCredentials[selectedRole].email}
-                </code>
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Password:</span>{' '}
-                <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
-                  {demoCredentials[selectedRole].password}
-                </code>
-              </p>
-            </div>
-          </motion.div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs font-semibold uppercase tracking-wider ${activeRole.textColor}`}>
+                    Demo Credentials
+                  </span>
+                  <button
+                    type="button"
+                    onClick={fillDemoCredentials}
+                    className={`text-xs font-medium ${activeRole.textColor} hover:underline`}
+                  >
+                    Auto-fill
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Email:</span>{' '}
+                    <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
+                      {demoCredentials[selectedRole].email}
+                    </code>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Password:</span>{' '}
+                    <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
+                      {demoCredentials[selectedRole].password}
+                    </code>
+                  </p>
+                </div>
+              </motion.div>
+            )}
         </motion.div>
       </div>
     </motion.div>
