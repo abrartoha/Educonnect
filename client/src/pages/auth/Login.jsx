@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Shield,
   Building2,
   Users,
   UserCheck,
@@ -21,18 +20,6 @@ import toast from 'react-hot-toast';
 import useStore from '../../store/useStore';
 
 const roles = [
-  {
-    id: 'admin',
-    label: 'Admin',
-    icon: Shield,
-    color: 'from-purple-600 to-indigo-600',
-    bgLight: 'bg-purple-50',
-    textColor: 'text-purple-700',
-    borderColor: 'border-purple-300',
-    ringColor: 'ring-purple-500',
-    hoverBg: 'hover:bg-purple-50',
-    accentBg: 'bg-purple-600',
-  },
   {
     id: 'university',
     label: 'University',
@@ -84,7 +71,6 @@ const roles = [
 ];
 
 const demoCredentials = {
-  admin: { email: 'admin@educonnect.com.au', password: 'Admin12345' },
   university: { email: 'admissions@unimelb.edu.au', password: 'Password123' },
   agent: { email: 'sarah@pacificedu.com.au', password: 'Password123' },
   consultant: { email: 'emma.thompson@educonsult.com.au', password: 'Password123' },
@@ -92,7 +78,6 @@ const demoCredentials = {
 };
 
 const dashboardRoutes = {
-  admin: '/admin',
   university: '/university',
   agent: '/agent',
   consultant: '/consultant',
@@ -103,7 +88,7 @@ export default function Login() {
   const navigate = useNavigate();
   const login = useStore((s) => s.login);
 
-  const [selectedRole, setSelectedRole] = useState('admin');
+  const [selectedRole, setSelectedRole] = useState('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -427,7 +412,6 @@ export default function Login() {
                 animate={{ y: 0, opacity: 1 }}
                 className="text-2xl font-bold mb-3"
               >
-                {selectedRole === 'admin' && 'Platform Administration'}
                 {selectedRole === 'university' && 'Manage Your Institution'}
                 {selectedRole === 'agent' && 'Connect Students Globally'}
                 {selectedRole === 'consultant' && 'Guide & Advise Students'}
@@ -440,8 +424,6 @@ export default function Login() {
                 transition={{ delay: 0.1 }}
                 className="text-white/70 text-sm leading-relaxed"
               >
-                {selectedRole === 'admin' &&
-                  'Oversee the entire EduConnect platform. Manage users, monitor activity, and ensure quality.'}
                 {selectedRole === 'university' &&
                   'Showcase your university to thousands of prospective students. Manage listings, respond to inquiries, and grow enrolments.'}
                 {selectedRole === 'agent' &&
@@ -509,7 +491,7 @@ export default function Login() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sign in as
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-1 bg-gray-100 rounded-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-gray-100 rounded-xl">
               {roles.map((role) => {
                 const Icon = role.icon;
                 const isActive = selectedRole === role.id;
