@@ -101,6 +101,12 @@
  *               properties:
  *                 success: { type: 'boolean' }
  *                 data: { $ref: '#/components/schemas/UniversityProfile' }
+ *       400:
+ *         description: Bad request (invalid ID format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Not found
  *         content:
@@ -206,6 +212,12 @@
  *               properties:
  *                 success: { type: 'boolean' }
  *                 data: { $ref: '#/components/schemas/AgentProfile' }
+ *       400:
+ *         description: Bad request (invalid ID format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Not found
  *         content:
@@ -311,6 +323,12 @@
  *               properties:
  *                 success: { type: 'boolean' }
  *                 data: { $ref: '#/components/schemas/ConsultantProfile' }
+ *       400:
+ *         description: Bad request (invalid ID format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Not found
  *         content:
@@ -375,21 +393,5 @@
  *               properties:
  *                 success: { type: 'boolean' }
  *                 data:
- *                   type: object
- *                   properties:
- *                     id: { type: 'string' }
- *                     name: { type: 'string' }
- *                     avatarUrl: { type: 'string', nullable: true }
- *                     createdAt: { type: 'string', format: 'date-time' }
- *                     student:
- *                       type: object
- *                       properties:
- *                         nationality: { type: 'string', nullable: true }
- *                         currentEducation: { type: 'string', nullable: true }
- *                         interestedIn: { type: 'array', items: { type: 'string' } }
- *                         preferredLocations: { type: 'array', items: { type: 'string' } }
- *                         budgetMin: { type: 'integer', nullable: true }
- *                         budgetMax: { type: 'integer', nullable: true }
- *                         bio: { type: 'string', nullable: true }
- *                         intakeTarget: { type: 'string', nullable: true }
+ *                   $ref: '#/components/schemas/StudentProfile'
  */

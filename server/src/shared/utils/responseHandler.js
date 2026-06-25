@@ -119,6 +119,6 @@ export const responseHandler = {
    * }, 'Users fetched successfully');
    */
   paginated(res, data, pagination, message, meta = {}) {
-    this.send(res, { statusCode: HttpStatus.OK, data, message, meta: { ...meta, pagination } });
+    this.send(res, { statusCode: HttpStatus.OK, data, message, meta: { ...meta, ...pagination } });
   },
 };
