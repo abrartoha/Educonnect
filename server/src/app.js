@@ -16,8 +16,6 @@ import { attachUser } from './shared/middleware/auth.js';
 import { errorHandler, notFoundHandler } from './shared/middleware/errorHandler.js';
 
 import apiRoutes from './modules/index.js';
-import swaggerSpec from './docs/swagger.js';
-import swaggerUi from 'swagger-ui-express';
 
 export const buildApp = () => {
   const app = express();
@@ -80,12 +78,6 @@ export const buildApp = () => {
 
   // --- API -----------------------------------------------------------------
   app.use('/api', apiLimiter, apiRoutes);
-
-  // --- Swagger (dev only) --------------------------------------------------
-  if (!isProd) {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-    app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
-  }
 
   // --- 404 + error handler -------------------------------------------------
   app.use(notFoundHandler);
