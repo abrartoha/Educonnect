@@ -3,7 +3,7 @@ import { authLimiter, signupLimiter } from '../../shared/middleware/rateLimits.j
 import { validate } from '../../shared/middleware/validate.js';
 import { asyncHandler } from '../../shared/utils/asyncHandler.js';
 import { csrfProtection } from '../../shared/middleware/csrf.js';
-import { signupSchema, loginSchema } from './auth.schema.js';
+import { signupSchema, loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import {
   signup,
   login,
@@ -11,17 +11,19 @@ import {
   logout,
   me,
   csrfToken,
+  getFormToken,
+  changePassword,
+  forgotPassword,
+  resetPassword,
 } from './auth.controller.js';
+import { emailValidator } from '../../shared/middleware/emailValidator.js';
+import { requireAuth } from '../../shared/middleware/auth.js';
+// import { timeCheck } from '../../shared/middleware/timeCheck.js';
 
 const router = Router();
 
-// Public — issue a CSRF token the SPA attaches to mutating requests.
 router.get('/csrf', asyncHandler(csrfToken));
 
-// Signup & login are bootstrap endpoints — no session exists yet to protect,
-// so CSRF doesn't apply. Mobile clients (no cookies, no CSRF token available)
-// and first-time web visitors (CSRF cookie not yet issued) both rely on this.
-// The login-CSRF attack is mitigated by SameSite=Strict cookies + rate limits.
 router.post(
   '/signup',
   signupLimiter,
@@ -36,12 +38,43 @@ router.post(
   asyncHandler(login)
 );
 
-// Refresh doesn't require CSRF (cookie is SameSite=Strict and bound to /api/auth)
-// but it's still protected by rate limit.
 router.post('/refresh', authLimiter, asyncHandler(refresh));
 
 router.post('/logout', csrfProtection, asyncHandler(logout));
 
 router.get('/me', asyncHandler(me));
+
+router.get('/form-token', asyncHandler(getFormToken));
+
+// Time check route for testing. Not for production use.
+// router.post('/time-check', timeCheck, (req, res) => {
+//   res.json({ message: 'Form submission accepted' });
+// });
+
+router.post('/check-email', emailValidator, (req, res) => {
+  res.json({ message: 'Email is valid and can receive emails' });
+});
+
+router.post(
+  '/change-password',
+  requireAuth,
+  csrfProtection,
+  validate({ body: changePasswordSchema }),
+  asyncHandler(changePassword)
+);
+
+router.post(
+  '/forgot-password',
+  // signupLimiter,
+  validate({ body: forgotPasswordSchema }),
+  asyncHandler(forgotPassword)
+);
+
+router.post(
+  '/reset-password',
+  // signupLimiter,
+  validate({ body: resetPasswordSchema }),
+  asyncHandler(resetPassword)
+);
 
 export default router;
