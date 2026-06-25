@@ -4,9 +4,6 @@ import {
   issueTokensForUser,
   rotateRefreshToken,
   revokeRefreshToken,
-  changeUserPassword,
-  generatePasswordResetToken,
-  resetPasswordWithToken,
 } from './auth.service.js';
 import {
   ACCESS_COOKIE,
@@ -18,10 +15,6 @@ import {
 import { UnauthorizedError } from '../../shared/utils/errors.js';
 import { prisma } from '../../db/prisma.js';
 import { generateCsrfToken } from '../../shared/middleware/csrf.js';
-import { env, isProd } from '../../config/env.js';
-import crypto from 'crypto';
-import redisClient from '../../db/redis.js';
-import { sendEmail } from '../../shared/services/sendEmail.js';
 
 const setAuthCookies = (res, { accessToken, refreshToken }) => {
   res.cookie(ACCESS_COOKIE, accessToken, accessCookieOptions());
@@ -113,81 +106,3 @@ export const csrfToken = (req, res) => {
   });
   res.json({ csrfToken: token });
 };
-
-export async function getFormToken(req, res) {
-  const timestamp = Date.now()
-  const secret    = env.FORM_TOKEN_SECRET || 'default_secret_change_me_in_prod'
-  const hmac      = crypto
-    .createHmac('sha256', secret)
-    .update(String(timestamp))
-    .digest('hex')
-
-  const token = `${timestamp}.${hmac}`
-
-  // Store token in Redis, expires in 15 min (900 seconds)
-  await redisClient.set(`formtoken:${token}`, '1', {
-    EX: 900
-  });
-
-  res.json({ token })
-}
-
-export async function changePassword(req, res) {
-  const { currentPassword, newPassword } = req.body;
-  const result = await changeUserPassword(req.user, currentPassword, newPassword);
-  if(!result) throw new Error('Password change failed');
-  const email = await sendEmail({
-    to: req.user.email,
-    subject: 'Password Changed',
-    templateName: 'changePasswordEmail',
-    templateData: { name: req.user.name, changedAt: new Date().toLocaleString() },
-  });
-  if(email) res.json({ ok: true });
-  else throw new Error('Password changed but failed to send notification email');
-}
-
-export async function forgotPassword(req, res) {
-  const { email } = req.body;
-  
-  // Generate reset token (also validates email exists)
-  const token = await generatePasswordResetToken(email);
-  
-  // Create reset link
-  const resetUrl = `${env.CLIENT_URL}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-  
-  // Send password reset email
-  const result = await sendEmail({
-    to: email,
-    subject: 'Password Reset Request',
-    templateName: 'passwordResetEmail',
-    templateData: { 
-      resetUrl,
-      expiryMinutes: 3,
-      name: email.split('@')[0],
-    },
-  });
-
-  if (result) {
-    res.json({ 
-      ok: true, 
-      message: 'Password reset link has been sent to your email. It will expire in 2 minutes.' 
-    });
-  } else {
-    throw new Error('Failed to send password reset email');
-    // Note: We don't want to reveal whether the email exists or not, so we return success even if sending fails.
-    // Refactore: In a real implementation, Silently reject and log this failure for internal monitoring but not expose it to the user.
-  }
-}
-
-export async function resetPassword(req, res) {
-  const { token, email, newPassword } = req.body;
-
-  // Reset password using token
-  const user = await resetPasswordWithToken(token, email, newPassword);
-
-  res.json({ 
-    ok: true, 
-    message: 'Password has been reset successfully. You can now login with your new password.',
-    data: isProd ? null : user
-  });
-}
