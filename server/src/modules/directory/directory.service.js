@@ -25,10 +25,19 @@ const consultantSelect = {
   consultant: true,
 };
 
+const studentSelect = {
+  id: true,
+  name: true,
+  avatarUrl: true,
+  createdAt: true,
+  student: true,
+};
+
 const selectByRole = {
   UNIVERSITY: uniSelect,
   AGENT: agentSelect,
   CONSULTANT: consultantSelect,
+  STUDENT: studentSelect,
 };
 
 const buildListArgs = (role, query) => {
@@ -106,7 +115,7 @@ export const getProfileById = async (role, id) => {
   if (role === 'UNIVERSITY') {
     prisma.universityProfile
       .update({ where: { userId: user.id }, data: { views: { increment: 1 } } })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   return user;
@@ -139,6 +148,8 @@ export const updateUserProfile = async (userId, role, data) => {
     STUDENT: 'student',
   }[role];
 
+  const select = selectByRole[role];
+
   return prisma.user.update({
     where: { id: userId },
     data: {
@@ -147,6 +158,6 @@ export const updateUserProfile = async (userId, role, data) => {
         ? { [profileRel]: { update: profile } }
         : {}),
     },
-    include: { [profileRel]: true },
+    select,
   });
 };

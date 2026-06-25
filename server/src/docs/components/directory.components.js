@@ -29,8 +29,11 @@ export const directorySchemas = {
           intakes: { type: 'array', items: { type: 'string' } },
           facilities: { type: 'array', items: { type: 'string' } },
           accreditations: { type: 'array', items: { type: 'string' } },
+          reviewCount: { type: 'integer' },
+          inquiries: { type: 'integer' },
           rating: { type: 'number' },
           views: { type: 'integer' },
+          tier: { type: 'string' },
           verified: { type: 'boolean' }
         }
       }
@@ -84,6 +87,11 @@ export const directorySchemas = {
           languages: { type: 'array', items: { type: 'string' } },
           specialisations: { type: 'array', items: { type: 'string' } },
           maraNumber: { type: 'string', nullable: true },
+          studentsPlaced: { type: 'integer', nullable: true },
+          partnerInstitutions: { type: 'integer', nullable: true },
+          successRate: { type: 'integer', nullable: true },
+          reviewCount: { type: 'integer' },
+          tier: { type: 'string' },
           rating: { type: 'number' },
           verified: { type: 'boolean' }
         }
@@ -128,6 +136,10 @@ export const directorySchemas = {
           languages: { type: 'array', items: { type: 'string' } },
           specialisations: { type: 'array', items: { type: 'string' } },
           hourlyRate: { type: 'integer', nullable: true },
+          studentsAssisted: { type: 'integer', nullable: true },
+          successRate: { type: 'integer', nullable: true },
+          reviewCount: { type: 'integer' },
+          tier: { type: 'string' },
           rating: { type: 'number' },
           verified: { type: 'boolean' }
         }
@@ -148,6 +160,28 @@ export const directorySchemas = {
       languages: { type: 'array', items: { type: 'string', maxLength: 60 }, maxItems: 20 },
       specialisations: { type: 'array', items: { type: 'string', maxLength: 120 }, maxItems: 30 },
       hourlyRate: { type: 'integer', minimum: 0, maximum: 10000 },
+    }
+  },
+  StudentProfile: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      name: { type: 'string' },
+      avatarUrl: { type: 'string', nullable: true },
+      createdAt: { type: 'string', format: 'date-time' },
+      student: {
+        type: 'object',
+        properties: {
+          nationality: { type: 'string', nullable: true },
+          currentEducation: { type: 'string', nullable: true },
+          interestedIn: { type: 'array', items: { type: 'string' } },
+          preferredLocations: { type: 'array', items: { type: 'string' } },
+          budgetMin: { type: 'integer', nullable: true },
+          budgetMax: { type: 'integer', nullable: true },
+          bio: { type: 'string', nullable: true },
+          intakeTarget: { type: 'string', nullable: true }
+        }
+      }
     }
   },
   StudentUpdate: {

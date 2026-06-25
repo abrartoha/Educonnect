@@ -2,8 +2,28 @@ export const sharedSchemas = {
   ErrorResponse: {
     type: 'object',
     properties: {
-      success: { type: 'boolean', example: false },
-      message: { type: 'string' },
+      error: {
+        type: 'object',
+        properties: {
+          code: { type: 'string' },
+          message: { type: 'string' },
+          details: {
+            type: 'object',
+            properties: {
+              issues: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    path: { type: 'string' },
+                    message: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
   RateLimitError: {
