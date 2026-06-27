@@ -1,0 +1,184 @@
+name: Deploy EduConnect
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - staging
+
+env:
+  DOCKERHUB_USERNAME: teraquency007
+  SERVER_IMAGE: teraquency007/educonnect-server
+  CLIENT_IMAGE: teraquency007/educonnect-client
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: |
+          IMAGE_TAG=${{ github.ref_name }}-v${{ github.run_number }}.${{ github.run_attempt }}
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push server image
+        run: |
+          docker build ./server \
+            -t $SERVER_IMAGE:$IMAGE_TAG \
+            -t $SERVER_IMAGE:${{ github.ref_name }}-latest
+          docker push $SERVER_IMAGE:$IMAGE_TAG
+          docker push $SERVER_IMAGE:${{ github.ref_name }}-latest
+
+      - name: Build and push client image
+        run: |
+          docker build ./client \
+            -t $CLIENT_IMAGE:$IMAGE_TAG \
+            -t $CLIENT_IMAGE:${{ github.ref_name }}-latest
+          docker push $CLIENT_IMAGE:$IMAGE_TAG
+          docker push $CLIENT_IMAGE:${{ github.ref_name }}-latest
+
+      - name: Save image tag
+        run: echo "$IMAGE_TAG" > image_tag.txt
+
+      - name: Upload image tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag
+          path: image_tag.txt
+
+  deploy-staging:
+    needs: build
+    if: github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download image tag
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag
+
+      - name: Load image tag
+        run: echo "IMAGE_TAG=$(cat image_tag.txt)" >> $GITHUB_ENV
+
+      - name: Deploy to Staging EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_TAG,SERVER_IMAGE,CLIENT_IMAGE
+          script: |
+            set -e
+            cd ~/Educonnect
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+              docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker pull $SERVER_IMAGE:$IMAGE_TAG
+            docker pull $CLIENT_IMAGE:$IMAGE_TAG
+            cat > docker-compose.override.yml << EOF
+            services:
+              server:
+                image: $SERVER_IMAGE:$IMAGE_TAG
+              client:
+                image: $CLIENT_IMAGE:$IMAGE_TAG
+            EOF
+            docker compose up -d --no-build
+            docker compose exec -T server npx prisma migrate deploy
+            docker image prune -f
+            echo "✅ Staging done!"
+
+      - name: Slack Notify — Staging
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="🧪✅"; else ICON="🧪❌"; fi
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\": \"${ICON} STAGING Deployment ${STATUS}\nBranch: staging\nTag: ${{ env.IMAGE_TAG }}\nLogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  promote-to-production:
+    needs: deploy-staging
+    if: github.ref_name == 'staging' && needs.deploy-staging.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Auto PR and merge staging to master
+        run: |
+          gh pr create \
+            --base master \
+            --head staging \
+            --title "🚀 Auto-promote staging to production [v${{ github.run_number }}]" \
+            --body "Staging passed ✅ Auto-promoting to production." \
+          || echo "PR already exists"
+          gh pr merge --head staging --squash --auto || echo "Auto-merge enabled"
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Slack Notify — Promoting
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\": \"🚀 Staging passed! Promoting to production...\nLogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  deploy-production:
+    needs: build
+    if: github.ref_name == 'master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download image tag
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag
+
+      - name: Load image tag
+        run: echo "IMAGE_TAG=$(cat image_tag.txt)" >> $GITHUB_ENV
+
+      - name: Deploy to Production EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_TAG,SERVER_IMAGE,CLIENT_IMAGE
+          script: |
+            set -e
+            cd ~/Educonnect
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+              docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            docker pull $SERVER_IMAGE:$IMAGE_TAG
+            docker pull $CLIENT_IMAGE:$IMAGE_TAG
+            cat > docker-compose.override.yml << EOF
+            services:
+              server:
+                image: $SERVER_IMAGE:$IMAGE_TAG
+              client:
+                image: $CLIENT_IMAGE:$IMAGE_TAG
+            EOF
+            docker compose up -d --no-build
+            docker compose exec -T server npx prisma migrate deploy
+            docker image prune -f
+            echo "✅ Production done!"
+
+      - name: Slack Notify — Production
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="🚀✅"; else ICON="🚀❌"; fi
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\": \"${ICON} PRODUCTION Deployment ${STATUS}\nBranch: master\nTag: ${{ env.IMAGE_TAG }}\nLogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
