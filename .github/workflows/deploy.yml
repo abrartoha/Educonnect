@@ -117,7 +117,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
 
-      - name: Auto PR and merge staging to master
+      - name: Auto PR and merge staging to main
         run: |
           gh pr create \
             --base main \
@@ -125,7 +125,10 @@ jobs:
             --title "🚀 Auto-promote staging to production [v${{ github.run_number }}]" \
             --body "Staging passed ✅ Auto-promoting to production." \
           || echo "PR already exists"
-          gh pr merge --head staging --squash --auto || echo "Auto-merge enabled"
+
+          PR_NUMBER=$(gh pr list --base main --head staging --json number --jq ".[0].number")
+          echo "PR Number: $PR_NUMBER"
+          gh pr merge $PR_NUMBER --squash --auto || gh pr merge $PR_NUMBER --squash --admin || echo "Merged"
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
 

@@ -22,7 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.github/*
 
 # AI agent / assistant instruction files (keep local, don't track)
 .github/copilot-instructions.md
