@@ -120,7 +120,7 @@ jobs:
       - name: Auto PR and merge staging to master
         run: |
           gh pr create \
-            --base master \
+            --base main \
             --head staging \
             --title "🚀 Auto-promote staging to production [v${{ github.run_number }}]" \
             --body "Staging passed ✅ Auto-promoting to production." \
@@ -180,5 +180,5 @@ jobs:
           STATUS="${{ job.status }}"
           if [ "$STATUS" = "success" ]; then ICON="🚀✅"; else ICON="🚀❌"; fi
           curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\": \"${ICON} PRODUCTION Deployment ${STATUS}\nBranch: master\nTag: ${{ env.IMAGE_TAG }}\nLogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          --data "{\"text\": \"${ICON} PRODUCTION Deployment ${STATUS}\nBranch: main\nTag: ${{ env.IMAGE_TAG }}\nLogs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
           ${{ secrets.SLACK_WEBHOOK_URL }}
