@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
       - staging
 
 env:
@@ -137,7 +137,7 @@ jobs:
 
   deploy-production:
     needs: build
-    if: github.ref_name == 'master'
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Download image tag
