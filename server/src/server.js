@@ -2,12 +2,14 @@ import { buildApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { prisma } from './db/prisma.js';
+import redisClient from './db/redis.js';
 import { startCronJobs, stopCronJobs } from './jobs/cron.js';
 
 const app = buildApp();
 
-const server = app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, async () => {
   logger.info(`🚀 Server listening on http://localhost:${env.PORT}`);
+  await redisClient.connect();
   startCronJobs();
 });
 
@@ -17,6 +19,7 @@ const shutdown = async (signal) => {
   stopCronJobs();
   server.close(async () => {
     await prisma.$disconnect().catch(() => {});
+    await redisClient.disconnect().catch(() => {});
     process.exit(0);
   });
   // Forcible exit if it takes too long.

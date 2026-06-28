@@ -1,0 +1,5 @@
+services:
+  server:
+    image: teraquency007/educonnect-server:main-v16.1
+  client:
+    image: teraquency007/educonnect-client:main-v16.1

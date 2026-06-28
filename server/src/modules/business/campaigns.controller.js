@@ -1,44 +1,33 @@
-import { prisma } from '../../db/prisma.js';
-import { NotFoundError, ForbiddenError } from '../../shared/utils/errors.js';
+import { responseHandler } from '../../shared/utils/responseHandler.js';
+import {
+  listMyCampaigns as listMyCampaignsService,
+  createCampaign as createCampaignService,
+  updateCampaign as updateCampaignService,
+  deleteCampaign as deleteCampaignService,
+  getCampaignStats as getCampaignStatsService,
+} from './campaigns.service.js';
 
 export const listMyCampaigns = async (req, res) => {
-  const items = await prisma.campaign.findMany({
-    where: { universityId: req.user.id },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json({ items });
+  const result = await listMyCampaignsService(req.user.id, req.query);
+  responseHandler.paginated(res, result.items, result.meta);
 };
 
 export const createCampaign = async (req, res) => {
-  const campaign = await prisma.campaign.create({
-    data: { ...req.body, universityId: req.user.id },
-  });
-  res.status(201).json({ item: campaign });
+  const campaign = await createCampaignService(req.user.id, req.body);
+  responseHandler.created(res, campaign);
 };
 
 export const updateCampaign = async (req, res) => {
-  const existing = await prisma.campaign.findUnique({
-    where: { id: req.params.id },
-    select: { universityId: true },
-  });
-  if (!existing) throw new NotFoundError('Campaign not found');
-  if (existing.universityId !== req.user.id) throw new ForbiddenError();
-
-  const campaign = await prisma.campaign.update({
-    where: { id: req.params.id },
-    data: req.body,
-  });
-  res.json({ item: campaign });
+  const campaign = await updateCampaignService(req.params.id, req.user.id, req.body);
+  responseHandler.updated(res, campaign);
 };
 
 export const deleteCampaign = async (req, res) => {
-  const existing = await prisma.campaign.findUnique({
-    where: { id: req.params.id },
-    select: { universityId: true },
-  });
-  if (!existing) throw new NotFoundError('Campaign not found');
-  if (existing.universityId !== req.user.id) throw new ForbiddenError();
+  await deleteCampaignService(req.params.id, req.user.id);
+  responseHandler.noContent(res);
+};
 
-  await prisma.campaign.delete({ where: { id: req.params.id } });
-  res.json({ ok: true });
+export const getCampaignStats = async (req, res) => {
+  const stats = await getCampaignStatsService(req.user.id, req.query);
+  responseHandler.ok(res, stats);
 };

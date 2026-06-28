@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Shield,
   Building2,
   Users,
   UserCheck,
@@ -21,18 +20,6 @@ import toast from 'react-hot-toast';
 import useStore from '../../store/useStore';
 
 const roles = [
-  {
-    id: 'admin',
-    label: 'Admin',
-    icon: Shield,
-    color: 'from-purple-600 to-indigo-600',
-    bgLight: 'bg-purple-50',
-    textColor: 'text-purple-700',
-    borderColor: 'border-purple-300',
-    ringColor: 'ring-purple-500',
-    hoverBg: 'hover:bg-purple-50',
-    accentBg: 'bg-purple-600',
-  },
   {
     id: 'university',
     label: 'University',
@@ -84,7 +71,6 @@ const roles = [
 ];
 
 const demoCredentials = {
-  admin: { email: 'admin@educonnect.com.au', password: 'Admin12345' },
   university: { email: 'admissions@unimelb.edu.au', password: 'Password123' },
   agent: { email: 'sarah@pacificedu.com.au', password: 'Password123' },
   consultant: { email: 'emma.thompson@educonsult.com.au', password: 'Password123' },
@@ -92,7 +78,6 @@ const demoCredentials = {
 };
 
 const dashboardRoutes = {
-  admin: '/admin',
   university: '/university',
   agent: '/agent',
   consultant: '/consultant',
@@ -103,7 +88,7 @@ export default function Login() {
   const navigate = useNavigate();
   const login = useStore((s) => s.login);
 
-  const [selectedRole, setSelectedRole] = useState('admin');
+  const [selectedRole, setSelectedRole] = useState('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -427,7 +412,6 @@ export default function Login() {
                 animate={{ y: 0, opacity: 1 }}
                 className="text-2xl font-bold mb-3"
               >
-                {selectedRole === 'admin' && 'Platform Administration'}
                 {selectedRole === 'university' && 'Manage Your Institution'}
                 {selectedRole === 'agent' && 'Connect Students Globally'}
                 {selectedRole === 'consultant' && 'Guide & Advise Students'}
@@ -440,8 +424,6 @@ export default function Login() {
                 transition={{ delay: 0.1 }}
                 className="text-white/70 text-sm leading-relaxed"
               >
-                {selectedRole === 'admin' &&
-                  'Oversee the entire EduConnect platform. Manage users, monitor activity, and ensure quality.'}
                 {selectedRole === 'university' &&
                   'Showcase your university to thousands of prospective students. Manage listings, respond to inquiries, and grow enrolments.'}
                 {selectedRole === 'agent' &&
@@ -509,7 +491,7 @@ export default function Login() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Sign in as
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 p-1 bg-gray-100 rounded-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-gray-100 rounded-xl">
               {roles.map((role) => {
                 const Icon = role.icon;
                 const isActive = selectedRole === role.id;
@@ -518,11 +500,10 @@ export default function Login() {
                     key={role.id}
                     type="button"
                     onClick={() => setSelectedRole(role.id)}
-                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                      isActive
-                        ? `bg-white shadow-sm ${role.textColor}`
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-medium transition-all duration-200 ${isActive
+                      ? `bg-white shadow-sm ${role.textColor}`
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{role.label}</span>
@@ -592,9 +573,12 @@ export default function Login() {
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <button type="button" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              >
                 Forgot password?
-              </button>
+              </Link>
             </div>
 
             {/* Submit button */}
@@ -629,40 +613,43 @@ export default function Login() {
           </p>
 
           {/* Demo credentials hint */}
-          <motion.div
-            key={selectedRole}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className={`mt-6 p-4 rounded-xl border ${activeRole.bgLight} ${activeRole.borderColor}/40`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className={`text-xs font-semibold uppercase tracking-wider ${activeRole.textColor}`}>
-                Demo Credentials
-              </span>
-              <button
-                type="button"
-                onClick={fillDemoCredentials}
-                className={`text-xs font-medium ${activeRole.textColor} hover:underline`}
+          {
+            import.meta.env.MODE === 'development' && (
+              <motion.div
+                key={selectedRole}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className={`mt-6 p-4 rounded-xl border ${activeRole.bgLight} ${activeRole.borderColor}/40`}
               >
-                Auto-fill
-              </button>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Email:</span>{' '}
-                <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
-                  {demoCredentials[selectedRole].email}
-                </code>
-              </p>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Password:</span>{' '}
-                <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
-                  {demoCredentials[selectedRole].password}
-                </code>
-              </p>
-            </div>
-          </motion.div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs font-semibold uppercase tracking-wider ${activeRole.textColor}`}>
+                    Demo Credentials
+                  </span>
+                  <button
+                    type="button"
+                    onClick={fillDemoCredentials}
+                    className={`text-xs font-medium ${activeRole.textColor} hover:underline`}
+                  >
+                    Auto-fill
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Email:</span>{' '}
+                    <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
+                      {demoCredentials[selectedRole].email}
+                    </code>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Password:</span>{' '}
+                    <code className="px-1.5 py-0.5 bg-white/80 rounded text-xs">
+                      {demoCredentials[selectedRole].password}
+                    </code>
+                  </p>
+                </div>
+              </motion.div>
+            )}
         </motion.div>
       </div>
     </motion.div>
