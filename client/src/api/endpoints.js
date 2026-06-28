@@ -14,18 +14,38 @@ export const authApi = {
 
 // ---- directory (universities/agents/consultants) ---------------------------
 export const directoryApi = {
-  listUniversities: (query) => api.get('/universities', { query }),
-  getUniversity: (id) => api.get(`/universities/${id}`),
-  compareUniversities: (ids) =>
-    api.get('/universities/compare', { query: { ids: ids.join(',') } }),
+  listUniversities: async (query) => {
+    const r = await api.get('/universities', { query });
+    return { items: r.data, meta: r.meta };
+  },
+  getUniversity: async (id) => {
+    const r = await api.get(`/universities/${id}`);
+    return { item: r.data };
+  },
+  compareUniversities: async (ids) => {
+    const r = await api.get('/universities/compare', { query: { ids: ids.join(',') } });
+    return { items: r.data };
+  },
   updateUniversityMe: (patch) => api.patch('/universities/me', patch),
 
-  listAgents: (query) => api.get('/agents', { query }),
-  getAgent: (id) => api.get(`/agents/${id}`),
+  listAgents: async (query) => {
+    const r = await api.get('/agents', { query });
+    return { items: r.data, meta: r.meta };
+  },
+  getAgent: async (id) => {
+    const r = await api.get(`/agents/${id}`);
+    return { item: r.data };
+  },
   updateAgentMe: (patch) => api.patch('/agents/me', patch),
 
-  listConsultants: (query) => api.get('/consultants', { query }),
-  getConsultant: (id) => api.get(`/consultants/${id}`),
+  listConsultants: async (query) => {
+    const r = await api.get('/consultants', { query });
+    return { items: r.data, meta: r.meta };
+  },
+  getConsultant: async (id) => {
+    const r = await api.get(`/consultants/${id}`);
+    return { item: r.data };
+  },
   updateConsultantMe: (patch) => api.patch('/consultants/me', patch),
 
   updateStudentMe: (patch) => api.patch('/students/me', patch),
